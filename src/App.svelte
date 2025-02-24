@@ -8,7 +8,7 @@
 
   type Tier = { name: string; items: Item[]; hue: number };
 
-  async function onDrop(e: DragEvent, tier_index: number | null) {
+  async function onDrop(e: DragEvent) {
     e.preventDefault();
     if (from === undefined || target === undefined) return;
     if ("length" in from) {
@@ -23,7 +23,10 @@
       const from_items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
       const from_item = from_items.splice(from.item_index, 1)[0];
       let destination = target.item_index;
-      if (from.item_index < destination && from.tier_index === tier_index) {
+      if (!target.before) {
+        destination += 1;
+      }
+      if (from.item_index < destination && from.tier_index === target.tier_index) {
         destination -= 1;
       }
       const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
@@ -37,20 +40,19 @@
     return Promise.all(
       files
         .filter((file) => file.type.startsWith("image/"))
-        .map((file) => {
-          return new Promise<Item>((resolve) => {
-            const fileReader = new FileReader();
-
-            fileReader.readAsDataURL(file);
-
-            fileReader.addEventListener("load", () => {
-              resolve({
-                id: Math.random(),
-                src: fileReader.result as string,
+        .map(
+          (file) =>
+            new Promise<Item>((resolve) => {
+              const fileReader = new FileReader();
+              fileReader.readAsDataURL(file);
+              fileReader.addEventListener("load", () => {
+                resolve({
+                  id: Math.random(),
+                  src: fileReader.result as string,
+                });
               });
-            });
-          });
-        }),
+            }),
+        ),
     );
   }
 
@@ -91,6 +93,7 @@
 <svelte:document
   ondragover={(e) => {
     e.preventDefault();
+    target = undefined;
     if (from !== undefined || !e.dataTransfer?.items?.length) {
       return;
     }
@@ -108,17 +111,34 @@
     {#each tiers as tier, tier_index}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="tier-name drop-handle-container"
+        class="tier"
         style:background-color="hsl({tier.hue}deg, 100%, 75%)"
         style:border="2px solid hsl({tier.hue}deg, 90%, 70%)"
         ondragover={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           target = { tier_index, item_index: 0, before: true };
         }}
-        ondrop={async (e) => {
-          onDrop(e, tier_index);
-        }}
+        ondrop={onDrop}
       >
+        <!-- <div class="tier-reorder-buttons">
+          <button
+            disabled={tier_index === 0}
+            onclick={() => {
+              [tiers[tier_index], tiers[tier_index - 1]] = [tiers[tier_index - 1], tiers[tier_index]];
+            }}>⮝</button
+          >
+          <button style="font-weight: 800;" onclick={() => {}}>⚙</button>
+          <button
+            disabled={tier_index === tiers.length - 1}
+            onclick={() => {
+              [tiers[tier_index], tiers[tier_index + 1]] = [tiers[tier_index + 1], tiers[tier_index]];
+            }}>⮟</button
+          >
+        </div>
+        <div class="tier-settings">
+          <input type="range" bind:value={tier.hue} min={0} max={360} step={30} />
+        </div> -->
         <div class="tier-name-edit" contenteditable="true" bind:textContent={tier.name}></div>
       </div>
 
@@ -146,7 +166,6 @@
     {/each}
   </div>
   <div class="uncategorized">
-    <h2>Uncategorized</h2>
     <div class="tier-items">
       {#each uncategorized as item, item_index (item.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -169,6 +188,23 @@
       </div>
     </div>
   </div>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="trashcan"
+    ondragover={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      target = undefined;
+    }}
+    ondrop={(e) => {
+      e.preventDefault();
+      if (from === undefined || "length" in from) return;
+      const items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
+      items.splice(from.item_index, 1);
+    }}
+  >
+    🗑
+  </div>
 </main>
 
 {#snippet DropHandle(tier_index: number | null, item_index: number, before: boolean)}
@@ -182,20 +218,78 @@
     class:after={!before}
     ondragover={(e) => {
       e.preventDefault();
+      e.stopPropagation();
       target = { tier_index, item_index, before };
     }}
     ondragenter={(e) => e.preventDefault()}
-    ondrop={(e) => {
-      onDrop(e, tier_index);
-    }}
+    ondrop={onDrop}
   ></div>
 {/snippet}
 
 <style>
+  main {
+    flex-grow: 1;
+    margin: 1em;
+    margin-bottom: 30em;
+  }
+
   .tier-list {
     display: grid;
     grid-template-columns: max-content 1fr;
     grid-template-rows: 1fr;
+    margin-left: 1em;
+  }
+
+  .tier {
+    position: relative;
+  }
+
+  .tier-reorder-buttons {
+    position: absolute;
+    inset: 0 100% 0 auto;
+    display: flex;
+    justify-content: center;
+    margin-right: 8px;
+    gap: 0.3em;
+    flex-direction: column;
+
+    > button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      aspect-ratio: 1;
+      padding: 0.1em;
+      font-size: 1.3em;
+      line-height: 1;
+      color: #fff3;
+
+      &:hover {
+        color: white;
+      }
+
+      &:disabled {
+        pointer-events: none;
+      }
+    }
+  }
+
+  .tier-settings {
+    top: 4px;
+    left: 4px;
+    background: none;
+    border: none;
+    line-height: 1em;
+    font-size: 0.8em;
+    position: absolute;
+    cursor: pointer;
+    padding: 0.2em;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 9999em;
   }
 
   .tier-name-edit {
@@ -216,11 +310,13 @@
   }
 
   .tier-items {
-    min-height: 80px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     background-color: #fff1;
+    outline: 2px solid #222;
+    outline-offset: 0px;
+    min-height: 80px;
   }
 
   .tier-item {
@@ -228,6 +324,10 @@
     cursor: pointer;
     position: relative;
     line-height: 0;
+
+    > img {
+      max-height: 100px;
+    }
   }
 
   .drop-handle {
@@ -264,6 +364,40 @@
     .drop-handle {
       left: 0;
       right: 0;
+    }
+  }
+
+  .uncategorized {
+    margin-top: 1em;
+  }
+
+  .trashcan {
+    position: fixed;
+    inset: 40px;
+    top: unset;
+    left: unset;
+
+    width: 60px;
+    aspect-ratio: 1;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 2em;
+    border: 1px solid #fff2;
+    border-radius: 9999em;
+    transition: opacity 0.1s linear;
+
+    pointer-events: none;
+
+    &:hover {
+      background-color: cornflowerblue;
+      border-color: red;
+    }
+
+    .dragging & {
+      pointer-events: all;
     }
   }
 </style>
