@@ -3,34 +3,58 @@
 
   type Item = {
     src: string;
-    name: string;
     id: number;
   };
 
   type Tier = { name: string; items: Item[]; hue: number };
 
-  document.addEventListener("paste", async (e) => {
-    if (e.clipboardData === null) return;
+  async function onDrop(e: DragEvent, tier_index: number | null) {
     e.preventDefault();
-
-    for (const file of e.clipboardData.files) {
-      if (file.type.startsWith("image/")) {
-        const fileReader = new FileReader();
-
-        fileReader.readAsDataURL(file);
-
-        fileReader.addEventListener("load", () => {
-          uncategorized.push({
-            id: Math.random(),
-            name: file.name,
-            src: fileReader.result as string,
-          });
-        });
+    if (from === undefined || target === undefined) return;
+    if ("length" in from) {
+      const items = await filesToItems(...e.dataTransfer!.files);
+      let destination = target.item_index;
+      const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
+      target_items.splice(destination, 0, ...items);
+    } else {
+      if (from.tier_index === target.tier_index && from.item_index === target.item_index) {
+        return;
       }
+      const from_items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
+      const from_item = from_items.splice(from.item_index, 1)[0];
+      let destination = target.item_index;
+      if (from.item_index < destination && from.tier_index === tier_index) {
+        destination -= 1;
+      }
+      const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
+      target_items.splice(destination, 0, from_item);
     }
-  });
+    from = undefined;
+    target = undefined;
+  }
 
-  let from = $state<{ tier_index: number | null; item_index: number } | File | undefined>();
+  function filesToItems(...files: File[]): Promise<Item[]> {
+    return Promise.all(
+      files
+        .filter((file) => file.type.startsWith("image/"))
+        .map((file) => {
+          return new Promise<Item>((resolve) => {
+            const fileReader = new FileReader();
+
+            fileReader.readAsDataURL(file);
+
+            fileReader.addEventListener("load", () => {
+              resolve({
+                id: Math.random(),
+                src: fileReader.result as string,
+              });
+            });
+          });
+        }),
+    );
+  }
+
+  let from = $state<{ tier_index: number | null; item_index: number } | DataTransferItemList | undefined>();
   let target = $state<{ tier_index: number | null; item_index: number; before: boolean } | undefined>();
 
   let tiers = $state<Tier[]>([
@@ -64,6 +88,21 @@
   let uncategorized = $state<Item[]>([]);
 </script>
 
+<svelte:document
+  ondragover={(e) => {
+    e.preventDefault();
+    if (from !== undefined || !e.dataTransfer?.items?.length) {
+      return;
+    }
+    from = e.dataTransfer.items;
+  }}
+  onpaste={async (e) => {
+    if (e.clipboardData === null) return;
+    e.preventDefault();
+
+    uncategorized.push(...(await filesToItems(...e.clipboardData.files)));
+  }}
+/>
 <main class:dragging={from !== undefined}>
   <div class="tier-list">
     {#each tiers as tier, tier_index}
@@ -76,20 +115,8 @@
           e.preventDefault();
           target = { tier_index, item_index: 0, before: true };
         }}
-        ondrop={(e) => {
-          e.preventDefault();
-          if (from === undefined || target === undefined) return;
-          if (from.tier_index === target.tier_index && from.item_index === target.item_index) {
-            return;
-          }
-          const from_items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
-          const from_item = from_items.splice(from.item_index, 1)[0];
-          let destination = target.item_index;
-          if (from.item_index < destination && from.tier_index === tier_index) {
-            destination -= 1;
-          }
-          const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
-          target_items.splice(destination, 0, from_item);
+        ondrop={async (e) => {
+          onDrop(e, tier_index);
         }}
       >
         <div class="tier-name-edit" contenteditable="true" bind:textContent={tier.name}></div>
@@ -107,7 +134,7 @@
               target = undefined;
             }}
           >
-            <img src={item.src} alt={item.name} />
+            <img src={item.src} alt="" />
             {@render DropHandle(tier_index, item_index, true)}
             {@render DropHandle(tier_index, item_index, false)}
           </div>
@@ -132,7 +159,7 @@
             target = undefined;
           }}
         >
-          <img src={item.src} alt={item.name} />
+          <img src={item.src} alt="" />
           {@render DropHandle(null, item_index, true)}
           {@render DropHandle(null, item_index, false)}
         </div>
@@ -154,37 +181,12 @@
     class:before
     class:after={!before}
     ondragover={(e) => {
-      console.log(e);
-
       e.preventDefault();
       target = { tier_index, item_index, before };
     }}
     ondragenter={(e) => e.preventDefault()}
     ondrop={(e) => {
-      console.log(e);
-      e.preventDefault();
-
-      if (from === undefined || target === undefined) {
-        return;
-      }
-      if (from.tier_index === target.tier_index && from.item_index === target.item_index) {
-        return;
-      }
-      const from_items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
-      const from_item = from_items.splice(from.item_index, 1)[0];
-      let destination = target.item_index;
-
-      if (from.item_index < destination && from.tier_index === tier_index) {
-        destination -= 1;
-      }
-
-      if (!before) {
-        destination += 1;
-      }
-
-      const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
-
-      target_items.splice(destination, 0, from_item);
+      onDrop(e, tier_index);
     }}
   ></div>
 {/snippet}
