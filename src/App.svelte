@@ -1,12 +1,13 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import Icon from "./icons/Icon.svelte";
 
   type Item = {
     src: string;
     id: number;
   };
 
-  type Tier = { name: string; items: Item[]; hue: number };
+  type Tier = { name: string; items: Item[]; color: string };
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
@@ -63,27 +64,27 @@
     {
       name: "S",
       items: [],
-      hue: 0,
+      color: "#ff8080",
     },
     {
       name: "A",
       items: [],
-      hue: 30,
+      color: "#ffbf80",
     },
     {
       name: "B",
       items: [],
-      hue: 45,
+      color: "#ffdf80",
     },
     {
       name: "C",
       items: [],
-      hue: 60,
+      color: "#ffff80",
     },
     {
       name: "F",
       items: [],
-      hue: 180,
+      color: "#80ffff",
     },
   ]);
 
@@ -109,11 +110,25 @@
 <main class:dragging={from !== undefined}>
   <div class="tier-list">
     {#each tiers as tier, tier_index}
+      <div class="tier-settings-buttons">
+        <label>
+          <Icon icon="palette" />
+          <input type="color" bind:value={tier.color} style="display: none;" />
+        </label>
+        <button
+          onclick={() => {
+            uncategorized.push(...tier.items);
+            tiers.splice(tier_index, 1);
+          }}
+        >
+          <Icon icon="trash" />
+        </button>
+      </div>
+
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="tier"
-        style:background-color="hsl({tier.hue}deg, 100%, 75%)"
-        style:border="2px solid hsl({tier.hue}deg, 90%, 70%)"
+        style:background-color={tier.color}
         ondragover={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -121,24 +136,6 @@
         }}
         ondrop={onDrop}
       >
-        <!-- <div class="tier-reorder-buttons">
-          <button
-            disabled={tier_index === 0}
-            onclick={() => {
-              [tiers[tier_index], tiers[tier_index - 1]] = [tiers[tier_index - 1], tiers[tier_index]];
-            }}>⮝</button
-          >
-          <button style="font-weight: 800;" onclick={() => {}}>⚙</button>
-          <button
-            disabled={tier_index === tiers.length - 1}
-            onclick={() => {
-              [tiers[tier_index], tiers[tier_index + 1]] = [tiers[tier_index + 1], tiers[tier_index]];
-            }}>⮟</button
-          >
-        </div>
-        <div class="tier-settings">
-          <input type="range" bind:value={tier.hue} min={0} max={360} step={30} />
-        </div> -->
         <div class="tier-name-edit" contenteditable="true" bind:textContent={tier.name}></div>
       </div>
 
@@ -163,29 +160,59 @@
           {@render DropHandle(tier_index, tier.items.length, true)}
         </div>
       </div>
-    {/each}
-  </div>
-  <div class="uncategorized">
-    <div class="tier-items">
-      {#each uncategorized as item, item_index (item.id)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tier-item"
-          draggable="true"
-          ondragstart={() => (from = { item_index, tier_index: null })}
-          ondragend={() => {
-            from = undefined;
-            target = undefined;
+      <div class="tier-reorder-buttons">
+        <button
+          disabled={tier_index === 0}
+          onclick={() => {
+            [tiers[tier_index], tiers[tier_index - 1]] = [tiers[tier_index - 1], tiers[tier_index]];
           }}
         >
-          <img src={item.src} alt="" />
-          {@render DropHandle(null, item_index, true)}
-          {@render DropHandle(null, item_index, false)}
-        </div>
-      {/each}
-      <div class="drop-handle-container" style="flex-grow:1;">
-        {@render DropHandle(null, uncategorized.length, true)}
+          <Icon icon="caret-up" size={16} />
+        </button>
+        <button
+          disabled={tier_index === tiers.length - 1}
+          onclick={() => {
+            [tiers[tier_index], tiers[tier_index + 1]] = [tiers[tier_index + 1], tiers[tier_index]];
+          }}
+        >
+          <Icon icon="caret-down" size={16} />
+        </button>
       </div>
+    {/each}
+    <div class="tier-create">
+      <button
+        onclick={() => {
+          tiers.push({
+            color: "#ececec",
+            items: [],
+            name: "",
+          });
+        }}
+      >
+        <Icon icon="plus-circle" size={24} />
+      </button>
+    </div>
+  </div>
+
+  <div class="tier-items uncategorized">
+    {#each uncategorized as item, item_index (item.id)}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tier-item"
+        draggable="true"
+        ondragstart={() => (from = { item_index, tier_index: null })}
+        ondragend={() => {
+          from = undefined;
+          target = undefined;
+        }}
+      >
+        <img src={item.src} alt="" />
+        {@render DropHandle(null, item_index, true)}
+        {@render DropHandle(null, item_index, false)}
+      </div>
+    {/each}
+    <div class="drop-handle-container" style="flex-grow:1;">
+      {@render DropHandle(null, uncategorized.length, true)}
     </div>
   </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -203,7 +230,7 @@
       items.splice(from.item_index, 1);
     }}
   >
-    🗑
+    <Icon icon="trash" size={24} />
   </div>
 </main>
 
@@ -235,23 +262,19 @@
 
   .tier-list {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: auto max-content 1fr auto;
     grid-template-rows: 1fr;
-    margin-left: 1em;
   }
 
   .tier {
-    position: relative;
+    box-shadow: inset 0px 0px 20px 3px #0002;
   }
 
-  .tier-reorder-buttons {
-    position: absolute;
-    inset: 0 100% 0 auto;
+  .tier-create {
     display: flex;
     justify-content: center;
-    margin-right: 8px;
-    gap: 0.3em;
-    flex-direction: column;
+    padding: 8px;
+    grid-column: 2 / 3;
 
     > button {
       background: none;
@@ -259,6 +282,7 @@
       cursor: pointer;
       display: flex;
       align-items: center;
+      justify-content: center;
       aspect-ratio: 1;
       padding: 0.1em;
       font-size: 1.3em;
@@ -275,21 +299,43 @@
     }
   }
 
-  .tier-settings {
-    top: 4px;
-    left: 4px;
-    background: none;
-    border: none;
-    line-height: 1em;
-    font-size: 0.8em;
-    position: absolute;
-    cursor: pointer;
-    padding: 0.2em;
-    aspect-ratio: 1;
+  .tier-settings-buttons {
+    margin-right: 6px;
+  }
+
+  .tier-reorder-buttons {
+    margin-left: 6px;
+  }
+
+  .tier-settings-buttons,
+  .tier-reorder-buttons {
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
-    border-radius: 9999em;
+    gap: 0.5em;
+
+    > button,
+    > label {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1;
+      padding: 0.1em;
+      font-size: 1.3em;
+      line-height: 1;
+      color: #fff3;
+
+      &:hover {
+        color: white;
+      }
+
+      &:disabled {
+        pointer-events: none;
+      }
+    }
   }
 
   .tier-name-edit {
@@ -314,9 +360,11 @@
     flex-direction: row;
     flex-wrap: wrap;
     background-color: #fff1;
-    outline: 2px solid #222;
-    outline-offset: 0px;
     min-height: 80px;
+
+    :where(&:not(:nth-child(3))) {
+      border-top: 1px solid #0005;
+    }
   }
 
   .tier-item {
@@ -368,7 +416,8 @@
   }
 
   .uncategorized {
-    margin-top: 1em;
+    border: none;
+    border-radius: 3px;
   }
 
   .trashcan {
