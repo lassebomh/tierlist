@@ -9,19 +9,24 @@
 
   type Tier = { name: string; items: Item[]; color: string };
 
+  type TierList = {
+    name: string;
+    tiers: Tier[];
+  };
+
   async function onDrop(e: DragEvent) {
     e.preventDefault();
     if (from === undefined || target === undefined) return;
     if ("length" in from) {
       const items = await filesToItems(...e.dataTransfer!.files);
       let destination = target.item_index;
-      const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
+      const target_items = target.tier_index === null ? uncategorized : tierlist.tiers[target.tier_index].items;
       target_items.splice(destination, 0, ...items);
     } else {
       if (from.tier_index === target.tier_index && from.item_index === target.item_index) {
         return;
       }
-      const from_items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
+      const from_items = from.tier_index === null ? uncategorized : tierlist.tiers[from.tier_index].items;
       const from_item = from_items.splice(from.item_index, 1)[0];
       let destination = target.item_index;
       if (!target.before) {
@@ -30,7 +35,7 @@
       if (from.item_index < destination && from.tier_index === target.tier_index) {
         destination -= 1;
       }
-      const target_items = target.tier_index === null ? uncategorized : tiers[target.tier_index].items;
+      const target_items = target.tier_index === null ? uncategorized : tierlist.tiers[target.tier_index].items;
       target_items.splice(destination, 0, from_item);
     }
     from = undefined;
@@ -60,33 +65,36 @@
   let from = $state<{ tier_index: number | null; item_index: number } | DataTransferItemList | undefined>();
   let target = $state<{ tier_index: number | null; item_index: number; before: boolean } | undefined>();
 
-  let tiers = $state<Tier[]>([
-    {
-      name: "S",
-      items: [],
-      color: "#ff8080",
-    },
-    {
-      name: "A",
-      items: [],
-      color: "#ffbf80",
-    },
-    {
-      name: "B",
-      items: [],
-      color: "#ffdf80",
-    },
-    {
-      name: "C",
-      items: [],
-      color: "#ffff80",
-    },
-    {
-      name: "F",
-      items: [],
-      color: "#80ffff",
-    },
-  ]);
+  let tierlist = $state<TierList>({
+    name: "Hello",
+    tiers: [
+      {
+        name: "S",
+        items: [],
+        color: "#ff8080",
+      },
+      {
+        name: "A",
+        items: [],
+        color: "#ffbf80",
+      },
+      {
+        name: "B",
+        items: [],
+        color: "#ffdf80",
+      },
+      {
+        name: "C",
+        items: [],
+        color: "#ffff80",
+      },
+      {
+        name: "F",
+        items: [],
+        color: "#80ffff",
+      },
+    ],
+  });
 
   let uncategorized = $state<Item[]>([]);
 </script>
@@ -109,7 +117,28 @@
 />
 <main class:dragging={from !== undefined}>
   <div class="tier-list">
-    {#each tiers as tier, tier_index}
+    <div></div>
+    <div class="tier-create">
+      <button
+        onclick={() => {
+          tierlist.tiers.unshift({
+            color: "#ececec",
+            items: [],
+            name: "",
+          });
+        }}
+      >
+        <Icon icon="plus-circle" size={24} />
+      </button>
+    </div>
+    <div class="tier-list-meta-buttons">
+      <input class="tier-list-title" placeholder="Enter a name..." type="text" bind:value={tierlist.name} />
+      <button> <Icon icon={"floppy"} size={20} /> </button>
+      <button> <Icon icon={"box-arrow"} size={20} /> </button>
+    </div>
+    <div></div>
+
+    {#each tierlist.tiers as tier, tier_index}
       <div class="tier-settings-buttons">
         <label>
           <Icon icon="palette" />
@@ -118,7 +147,7 @@
         <button
           onclick={() => {
             uncategorized.push(...tier.items);
-            tiers.splice(tier_index, 1);
+            tierlist.tiers.splice(tier_index, 1);
           }}
         >
           <Icon icon="trash" />
@@ -164,57 +193,54 @@
         <button
           disabled={tier_index === 0}
           onclick={() => {
-            [tiers[tier_index], tiers[tier_index - 1]] = [tiers[tier_index - 1], tiers[tier_index]];
+            [tierlist.tiers[tier_index], tierlist.tiers[tier_index - 1]] = [
+              tierlist.tiers[tier_index - 1],
+              tierlist.tiers[tier_index],
+            ];
           }}
         >
           <Icon icon="caret-up" size={16} />
         </button>
         <button
-          disabled={tier_index === tiers.length - 1}
+          disabled={tier_index === tierlist.tiers.length - 1}
           onclick={() => {
-            [tiers[tier_index], tiers[tier_index + 1]] = [tiers[tier_index + 1], tiers[tier_index]];
+            [tierlist.tiers[tier_index], tierlist.tiers[tier_index + 1]] = [
+              tierlist.tiers[tier_index + 1],
+              tierlist.tiers[tier_index],
+            ];
           }}
         >
           <Icon icon="caret-down" size={16} />
         </button>
       </div>
     {/each}
-    <div class="tier-create">
-      <button
-        onclick={() => {
-          tiers.push({
-            color: "#ececec",
-            items: [],
-            name: "",
-          });
-        }}
-      >
-        <Icon icon="plus-circle" size={24} />
-      </button>
+    <div></div>
+    <div></div>
+    <div>
+      <div class="tier-items uncategorized">
+        {#each uncategorized as item, item_index (item.id)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="tier-item"
+            draggable="true"
+            ondragstart={() => (from = { item_index, tier_index: null })}
+            ondragend={() => {
+              from = undefined;
+              target = undefined;
+            }}
+          >
+            <img src={item.src} alt="" />
+            {@render DropHandle(null, item_index, true)}
+            {@render DropHandle(null, item_index, false)}
+          </div>
+        {/each}
+        <div class="drop-handle-container" style="flex-grow:1;">
+          {@render DropHandle(null, uncategorized.length, true)}
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="tier-items uncategorized">
-    {#each uncategorized as item, item_index (item.id)}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="tier-item"
-        draggable="true"
-        ondragstart={() => (from = { item_index, tier_index: null })}
-        ondragend={() => {
-          from = undefined;
-          target = undefined;
-        }}
-      >
-        <img src={item.src} alt="" />
-        {@render DropHandle(null, item_index, true)}
-        {@render DropHandle(null, item_index, false)}
-      </div>
-    {/each}
-    <div class="drop-handle-container" style="flex-grow:1;">
-      {@render DropHandle(null, uncategorized.length, true)}
-    </div>
-  </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="trashcan"
@@ -226,7 +252,7 @@
     ondrop={(e) => {
       e.preventDefault();
       if (from === undefined || "length" in from) return;
-      const items = from.tier_index === null ? uncategorized : tiers[from.tier_index].items;
+      const items = from.tier_index === null ? uncategorized : tierlist.tiers[from.tier_index].items;
       items.splice(from.item_index, 1);
     }}
   >
@@ -255,15 +281,40 @@
 
 <style>
   main {
-    flex-grow: 1;
-    margin: 1em;
+    margin: auto;
+    margin-top: 5em;
     margin-bottom: 30em;
+    min-width: 100vmin;
+    width: 70vw;
+    max-width: 1200px;
+    padding: 0 12px;
+    flex-grow: 1;
+    /* margin: 1em;
+    margin-top: 10em;
+    margin-bottom: 30em;
+    width: 90vmin; */
   }
 
   .tier-list {
     display: grid;
     grid-template-columns: auto max-content 1fr auto;
     grid-template-rows: 1fr;
+  }
+
+  .tier-list-meta-buttons {
+    display: flex;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .tier-list-title {
+    background-color: #ffffff09;
+    border-radius: 2px;
+    border: none;
+    color: white;
+    font-size: 1em;
+    padding: 8px;
+    flex-grow: 1;
   }
 
   .tier {
@@ -274,7 +325,7 @@
     display: flex;
     justify-content: center;
     padding: 8px;
-    grid-column: 2 / 3;
+    /* grid-column: 1 / 5; */
 
     > button {
       background: none;
@@ -307,35 +358,35 @@
     margin-left: 6px;
   }
 
+  button,
+  label {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0.1em;
+    font-size: 1.3em;
+    line-height: 1;
+    color: #fff3;
+
+    &:hover {
+      color: white;
+    }
+
+    &:disabled {
+      pointer-events: none;
+    }
+  }
+
   .tier-settings-buttons,
   .tier-reorder-buttons {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 0.5em;
-
-    > button,
-    > label {
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      aspect-ratio: 1;
-      padding: 0.1em;
-      font-size: 1.3em;
-      line-height: 1;
-      color: #fff3;
-
-      &:hover {
-        color: white;
-      }
-
-      &:disabled {
-        pointer-events: none;
-      }
-    }
   }
 
   .tier-name-edit {
@@ -418,6 +469,8 @@
   .uncategorized {
     border: none;
     border-radius: 3px;
+
+    margin-top: 1em;
   }
 
   .trashcan {

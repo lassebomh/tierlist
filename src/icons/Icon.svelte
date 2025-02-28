@@ -1,6 +1,6 @@
 <script lang="ts" module>
   const raw = import.meta.glob("./svg/*.html", { eager: true, query: "raw", import: "default" });
-  type Icon = "caret-down" | "caret-up" | "gear" | "trash" | "palette" | "plus-circle";
+  type Icon = "caret-down" | "caret-up" | "gear" | "trash" | "palette" | "plus-circle" | "box-arrow" | "floppy";
 </script>
 
 <script lang="ts">
