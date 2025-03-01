@@ -133,8 +133,8 @@
     </div>
     <div class="tier-list-meta-buttons">
       <input class="tier-list-title" placeholder="Enter a name..." type="text" bind:value={tierlist.name} />
-      <button> <Icon icon={"floppy"} size={20} /> </button>
-      <button> <Icon icon={"box-arrow"} size={20} /> </button>
+      <button> <Icon icon={"box-out"} size={24} /> </button>
+      <button> <Icon icon={"box-in"} size={24} /> </button>
     </div>
     <div></div>
 
@@ -281,18 +281,12 @@
 
 <style>
   main {
-    margin: auto;
-    margin-top: 5em;
-    margin-bottom: 30em;
+    margin: 5em auto;
     min-width: 100vmin;
     width: 70vw;
     max-width: 1200px;
     padding: 0 12px;
     flex-grow: 1;
-    /* margin: 1em;
-    margin-top: 10em;
-    margin-bottom: 30em;
-    width: 90vmin; */
   }
 
   .tier-list {
@@ -304,7 +298,6 @@
   .tier-list-meta-buttons {
     display: flex;
     margin-bottom: 8px;
-    gap: 8px;
   }
 
   .tier-list-title {
@@ -315,6 +308,7 @@
     font-size: 1em;
     padding: 8px;
     flex-grow: 1;
+    margin-right: 8px;
   }
 
   .tier {
@@ -415,6 +409,7 @@
 
     :where(&:not(:nth-child(3))) {
       border-top: 1px solid #0005;
+      margin-top: -1px;
     }
   }
 
