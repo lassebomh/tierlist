@@ -1,0 +1,31 @@
+{
+  "name": "Hello",
+  "uncategorized": [],
+  "tiers": [
+    {
+      "name": "S",
+      "items": [],
+      "color": "#ff8080"
+    },
+    {
+      "name": "A",
+      "items": [],
+      "color": "#ffbf80"
+    },
+    {
+      "name": "B",
+      "items": [],
+      "color": "#ffdf80"
+    },
+    {
+      "name": "C",
+      "items": [],
+      "color": "#ffff80"
+    },
+    {
+      "name": "F",
+      "items": [],
+      "color": "#80ffff"
+    }
+  ]
+}

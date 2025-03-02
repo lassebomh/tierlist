@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  const raw = import.meta.glob("./svg/*.html", { eager: true, query: "raw", import: "default" });
+  const raw = import.meta.glob("../assets/icons/*.html", { eager: true, query: "raw", import: "default" });
   type Icon =
     | "caret-down"
     | "caret-up"
@@ -9,7 +9,8 @@
     | "plus-circle"
     | "box-in"
     | "box-out"
-    | "floppy";
+    | "floppy"
+    | "move";
 </script>
 
 <script lang="ts">
@@ -17,5 +18,5 @@
 </script>
 
 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16">
-  {@html raw[`./svg/${icon}.html`]}
+  {@html raw[`../assets/icons/${icon}.html`]}
 </svg>
