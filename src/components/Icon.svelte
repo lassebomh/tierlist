@@ -14,9 +14,18 @@
 </script>
 
 <script lang="ts">
-  let { icon, size = 16 }: { icon: Icon; size?: number } = $props();
+  import { type SvelteHTMLElements } from "svelte/elements";
+  let {
+    icon,
+    xmlns = "http://www.w3.org/2000/svg",
+    width = 16,
+    height = 16,
+    viewBox = "0 0 16 16",
+    fill = "currentColor",
+    ...rest
+  }: { icon: Icon } & SvelteHTMLElements["svg"] = $props();
 </script>
 
-<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16">
+<svg {xmlns} {width} {height} {viewBox} {fill} {...rest}>
   {@html raw[`../assets/icons/${icon}.html`]}
 </svg>

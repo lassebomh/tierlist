@@ -103,14 +103,14 @@
           tierlist = JSON.parse(await readAsText(file));
         }}
       >
-        <Icon icon={"box-out"} size={24} />
+        <Icon icon={"box-out"} width={24} height={24} />
       </button>
       <button
         onclick={() => {
           download(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
         }}
       >
-        <Icon icon={"box-in"} size={24} />
+        <Icon icon={"box-in"} width={24} height={24} />
       </button>
     </div>
     <div></div>
@@ -168,10 +168,10 @@
             ];
           }}
         >
-          <Icon icon="caret-up" size={16} />
+          <Icon icon="caret-up" width={16} height={16} />
         </button>
         <label style="position: relative;">
-          <Icon icon="palette" size={14} />
+          <Icon icon="palette" width={14} height={14} />
           <input
             type="color"
             bind:value={tier.color}
@@ -187,7 +187,7 @@
             ];
           }}
         >
-          <Icon icon="caret-down" size={16} />
+          <Icon icon="caret-down" width={16} height={16} />
         </button>
       </div>
     {/each}
@@ -202,7 +202,7 @@
           });
         }}
       >
-        <Icon icon="plus-circle" size={24} />
+        <Icon icon="plus-circle" width={24} height={24} />
       </button>
     </div>
     <div></div>
@@ -250,7 +250,7 @@
             tierlist.uncategorized.push(...(await filesToItems(...files)));
           }}
         >
-          <Icon icon={"box-out"} size={16} />
+          <Icon icon={"box-out"} width={16} height={16} />
         </button>
       </div>
     </li>
