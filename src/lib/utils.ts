@@ -15,7 +15,11 @@ export function download(filename: string, contents: BlobPart) {
 let uploadInput = document.createElement("input");
 uploadInput.type = "file";
 
-export function upload(): Promise<File[] | null> {
+export async function uploadSingle(type: string): Promise<File | null> {
+  return (await uploadMultiple(type))?.at(0) ?? null;
+}
+
+export function uploadMultiple(type: string): Promise<File[] | null> {
   let cleanupFiles: any;
 
   const filesPromise = new Promise<File[] | null>((res) => {
@@ -39,8 +43,6 @@ export function upload(): Promise<File[] | null> {
 
   const focusPromise = new Promise<null>((res) => {
     function onfocus() {
-      console.log("focused");
-
       res(null);
     }
     window.addEventListener("focus", onfocus, { once: true });

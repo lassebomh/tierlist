@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import { download, randomId, readAsDataURL, readAsText, slugify, upload } from "./lib/utils";
+  import { download, randomId, readAsDataURL, readAsText, slugify, uploadMultiple, uploadSingle } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
 
   type Item = {
@@ -77,7 +77,6 @@
   onpaste={async (e) => {
     if (e.clipboardData === null) return;
     e.preventDefault();
-
     tierlist.uncategorized.push(...(await filesToItems(...e.clipboardData.files)));
   }}
 />
@@ -99,8 +98,8 @@
       <input class="tier-list-title" placeholder="Enter a name..." type="text" bind:value={tierlist.name} />
       <button
         onclick={async () => {
-          const file = (await upload())?.at(0);
-          if (file === undefined) return;
+          const file = await uploadSingle("application/json");
+          if (file === null) return;
           tierlist = JSON.parse(await readAsText(file));
         }}
       >
@@ -233,15 +232,28 @@
           {@render DropHandle(null, tierlist.uncategorized.length, true)}
         </div>
       </div>
-      <!-- <button class="upload-images"> Upload images </button> -->
     </div>
   </div>
   <!-- <button class="upload-images">Upload images</button> -->
   <h3>Uploading an image</h3>
-  <ul>
-    <li>Upload images.</li>
-    <li>Paste an image from your clipboard.</li>
-    <li>Drag an image from your desktop</li>
+  <ul class="how-to-upload">
+    <li><div>Paste an image from your clipboard.</div></li>
+    <li><div>Drag an image from your desktop</div></li>
+    <li>
+      <div>
+        Select images to upload
+        <button
+          style="display: inline; color: white;"
+          onclick={async () => {
+            let files = await uploadMultiple("image/*");
+            if (files === null) return;
+            tierlist.uncategorized.push(...(await filesToItems(...files)));
+          }}
+        >
+          <Icon icon={"box-out"} size={16} />
+        </button>
+      </div>
+    </li>
   </ul>
 </main>
 
@@ -407,7 +419,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 1;
     padding: 0.1em;
     font-size: 1.3em;
     line-height: 1;
@@ -516,9 +527,19 @@
     grid-column: 1 / 3;
     display: flex;
     flex-direction: column;
+    position: relative;
 
     .tier-items {
       background-color: transparent;
+    }
+  }
+
+  .how-to-upload {
+    li > div {
+      display: flex;
+      align-items: center;
+      gap: 0.25em;
+      flex-wrap: wrap;
     }
   }
 </style>
