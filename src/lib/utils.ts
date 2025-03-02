@@ -88,3 +88,7 @@ export const slugify = (text: string) =>
     .replace(/\_/g, "-") // Replace _ with -
     .replace(/\-\-+/g, "-") // Replace multiple - with single -
     .replace(/\-$/g, ""); // Remove trailing -
+
+export function randomId() {
+  return Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+}

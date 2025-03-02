@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import { download, readAsDataURL, readAsText, slugify, upload } from "./lib/utils";
+  import { download, randomId, readAsDataURL, readAsText, slugify, upload } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
 
   type Item = {
@@ -51,7 +51,7 @@
       files
         .filter((file) => file.type.startsWith("image/"))
         .map(async (file) => ({
-          id: Math.random(),
+          id: randomId(),
           src: await readAsDataURL(file),
         }))
     );
@@ -171,9 +171,13 @@
         >
           <Icon icon="caret-up" size={16} />
         </button>
-        <label>
+        <label style="position: relative;">
           <Icon icon="palette" size={14} />
-          <input type="color" bind:value={tier.color} style="display: none;" />
+          <input
+            type="color"
+            bind:value={tier.color}
+            style="width: 0; height: 0; border: none; background: none; bottom: 0; right: 0; position: absolute;"
+          />
         </label>
         <button
           disabled={tier_index === tierlist.tiers.length - 1}
@@ -204,31 +208,41 @@
     </div>
     <div></div>
     <div></div>
-    <div class="tier-items uncategorized">
-      {#each tierlist.uncategorized as item, item_index (item.id)}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tier-item"
-          draggable="true"
-          ondragstart={() => (from = { item_index, tier_index: null })}
-          ondragend={() => {
-            from = undefined;
-            target = undefined;
-          }}
-        >
-          <img src={item.src} alt="" />
-          {@render DropHandle(null, item_index, true)}
-          {@render DropHandle(null, item_index, false)}
-          {@render DeleteOverlay(() => {
-            tierlist.uncategorized.splice(item_index, 1);
-          })}
+    <div class="uncategorized">
+      <div class="tier-items">
+        {#each tierlist.uncategorized as item, item_index (item.id)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="tier-item"
+            draggable="true"
+            ondragstart={() => (from = { item_index, tier_index: null })}
+            ondragend={() => {
+              from = undefined;
+              target = undefined;
+            }}
+          >
+            <img src={item.src} alt="" />
+            {@render DropHandle(null, item_index, true)}
+            {@render DropHandle(null, item_index, false)}
+            {@render DeleteOverlay(() => {
+              tierlist.uncategorized.splice(item_index, 1);
+            })}
+          </div>
+        {/each}
+        <div class="drop-handle-container" style="flex-grow:1;">
+          {@render DropHandle(null, tierlist.uncategorized.length, true)}
         </div>
-      {/each}
-      <div class="drop-handle-container" style="flex-grow:1;">
-        {@render DropHandle(null, tierlist.uncategorized.length, true)}
       </div>
+      <!-- <button class="upload-images"> Upload images </button> -->
     </div>
   </div>
+  <!-- <button class="upload-images">Upload images</button> -->
+  <h3>Uploading an image</h3>
+  <ul>
+    <li>Upload images.</li>
+    <li>Paste an image from your clipboard.</li>
+    <li>Drag an image from your desktop</li>
+  </ul>
 </main>
 
 {#snippet DropHandle(tier_index: number | null, item_index: number, before: boolean)}
@@ -496,8 +510,15 @@
 
   .uncategorized {
     border-radius: 6px;
-    border: 2px #fff3 dashed;
+    outline: 2px #fff3 dashed;
+    outline-offset: -2px;
     background: transparent;
     grid-column: 1 / 3;
+    display: flex;
+    flex-direction: column;
+
+    .tier-items {
+      background-color: transparent;
+    }
   }
 </style>
