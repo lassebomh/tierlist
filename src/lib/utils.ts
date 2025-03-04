@@ -1,6 +1,6 @@
 const downloadAnchor = document.createElement("a");
 
-export function download(filename: string, contents: BlobPart) {
+export function downloadFile(filename: string, contents: BlobPart) {
   const reader = new FileReader();
   reader.readAsDataURL(new Blob([contents]));
   reader.addEventListener("load", () => {
@@ -15,11 +15,11 @@ export function download(filename: string, contents: BlobPart) {
 let uploadInput = document.createElement("input");
 uploadInput.type = "file";
 
-export async function uploadSingle(type: string): Promise<File | null> {
-  return (await uploadMultiple(type))?.at(0) ?? null;
+export async function requestFileUpload(type: string): Promise<File | null> {
+  return (await requestMultipleFilesUpload(type))?.at(0) ?? null;
 }
 
-export function uploadMultiple(type: string): Promise<File[] | null> {
+export function requestMultipleFilesUpload(type: string): Promise<File[] | null> {
   let cleanupFiles: any;
 
   const filesPromise = new Promise<File[] | null>((res) => {
@@ -82,14 +82,14 @@ export function readAsDataURL(file: Blob): Promise<string> {
 
 export const slugify = (text: string) =>
   text
-    .normalize("NFKD") // The normalize() using NFKD method returns the Unicode Normalization Form of a given string.
-    .toLowerCase() // Convert the string to lowercase letters
-    .trim() // Remove whitespace from both sides of a string (optional)
-    .replace(/\s+/g, "-") // Replace spaces with -
-    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
-    .replace(/\_/g, "-") // Replace _ with -
-    .replace(/\-\-+/g, "-") // Replace multiple - with single -
-    .replace(/\-$/g, ""); // Remove trailing -
+    .normalize("NFKD")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\_/g, "-")
+    .replace(/\-\-+/g, "-")
+    .replace(/\-$/g, "");
 
 export function randomId() {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER);

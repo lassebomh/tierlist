@@ -1,25 +1,13 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import { download, randomId, readAsDataURL, readAsText, slugify, uploadMultiple, uploadSingle } from "./lib/utils";
+  import { downloadFile, readAsText, slugify, requestMultipleFilesUpload, requestFileUpload } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
-
-  type Item = {
-    src: string;
-    id: number;
-  };
-
-  type Tier = { name: string; items: Item[]; color: string };
-
-  type TierList = {
-    name: string;
-    tiers: Tier[];
-    uncategorized: Item[];
-  };
+  import { filesToItems, type TierList } from "./lib/tierlist";
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
     if (from === undefined || target === undefined) return;
-    if ("length" in from) {
+    if (from.type === "files") {
       const items = await filesToItems(...e.dataTransfer!.files);
       let destination = target.item_index;
       const target_items =
@@ -46,19 +34,11 @@
     target = undefined;
   }
 
-  function filesToItems(...files: File[]): Promise<Item[]> {
-    return Promise.all(
-      files
-        .filter((file) => file.type.startsWith("image/"))
-        .map(async (file) => ({
-          id: randomId(),
-          src: await readAsDataURL(file),
-        }))
-    );
-  }
+  type DragAction = { type: "item"; tier_index: number | null; item_index: number } | { type: "files" };
+  type DragTarget = { type: "item"; tier_index: number | null; item_index: number; before: boolean };
 
-  let from = $state<{ tier_index: number | null; item_index: number } | DataTransferItemList | undefined>();
-  let target = $state<{ tier_index: number | null; item_index: number; before: boolean } | undefined>();
+  let from = $state<DragAction | undefined>();
+  let target = $state<DragTarget | undefined>();
 
   let mode = $state<"mode-move" | "mode-delete">("mode-move");
 
@@ -72,7 +52,7 @@
     if (from !== undefined || !e.dataTransfer?.items?.length) {
       return;
     }
-    from = e.dataTransfer.items;
+    from = { type: "files" };
   }}
   onpaste={async (e) => {
     if (e.clipboardData === null) return;
@@ -98,7 +78,7 @@
       <input class="tier-list-title" placeholder="Enter a name..." type="text" bind:value={tierlist.name} />
       <button
         onclick={async () => {
-          const file = await uploadSingle("application/json");
+          const file = await requestFileUpload("application/json");
           if (file === null) return;
           tierlist = JSON.parse(await readAsText(file));
         }}
@@ -107,7 +87,7 @@
       </button>
       <button
         onclick={() => {
-          download(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
+          downloadFile(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
         }}
       >
         <Icon icon={"box-in"} width={24} height={24} />
@@ -123,7 +103,7 @@
         ondragover={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          target = { tier_index, item_index: 0, before: true };
+          target = { type: "item", tier_index, item_index: 0, before: true };
         }}
         ondrop={onDrop}
       >
@@ -145,7 +125,7 @@
                 e.dataTransfer.effectAllowed = "move";
               }
               setTimeout(() => {
-                from = from = { item_index, tier_index };
+                from = { type: "item", item_index, tier_index };
               }, 0);
             }}
             ondragend={() => {
@@ -226,7 +206,7 @@
                 e.dataTransfer.effectAllowed = "move";
               }
               setTimeout(() => {
-                from = { item_index, tier_index: null };
+                from = { type: "item", item_index, tier_index: null };
               }, 0);
             }}
             ondragend={() => {
@@ -259,7 +239,7 @@
         <button
           style="display: inline; color: white;"
           onclick={async () => {
-            let files = await uploadMultiple("image/*");
+            let files = await requestMultipleFilesUpload("image/*");
             if (files === null) return;
             tierlist.uncategorized.push(...(await filesToItems(...files)));
           }}
@@ -283,7 +263,7 @@
     ondragover={(e) => {
       e.preventDefault();
       e.stopPropagation();
-      target = { tier_index, item_index, before };
+      target = { type: "item", tier_index, item_index, before };
     }}
     ondragenter={(e) => e.preventDefault()}
     ondrop={onDrop}
