@@ -140,7 +140,14 @@
           <div
             class="tier-item"
             draggable="true"
-            ondragstart={() => (from = { item_index, tier_index })}
+            ondragstart={(e) => {
+              if (e.dataTransfer !== null) {
+                e.dataTransfer.effectAllowed = "move";
+              }
+              setTimeout(() => {
+                from = from = { item_index, tier_index };
+              }, 0);
+            }}
             ondragend={() => {
               from = undefined;
               target = undefined;
@@ -214,7 +221,14 @@
           <div
             class="tier-item"
             draggable="true"
-            ondragstart={() => (from = { item_index, tier_index: null })}
+            ondragstart={(e) => {
+              if (e.dataTransfer !== null) {
+                e.dataTransfer.effectAllowed = "move";
+              }
+              setTimeout(() => {
+                from = { item_index, tier_index: null };
+              }, 0);
+            }}
             ondragend={() => {
               from = undefined;
               target = undefined;
