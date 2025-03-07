@@ -61,45 +61,40 @@
   }}
 />
 <main class:dragging={from !== undefined} class={mode}>
-  <div class="tier-list">
-    <div class="tier-list-mode-buttons">
-      <button class="tier-list-mode-move" class:active={mode === "mode-move"} onclick={() => (mode = "mode-move")}>
-        <Icon icon={"move"} />
-      </button>
-      <button
-        class="tier-list-mode-delete"
-        class:active={mode === "mode-delete"}
-        onclick={() => (mode = "mode-delete")}
-      >
-        <Icon icon={"trash"} />
-      </button>
-    </div>
-    <div class="tier-list-meta-buttons">
-      <input class="tier-list-title" placeholder="Enter a name..." type="text" bind:value={tierlist.name} />
-      <button
-        onclick={async () => {
-          const file = await requestFileUpload("application/json");
-          if (file === null) return;
-          tierlist = JSON.parse(await readAsText(file));
-        }}
-      >
-        <Icon icon={"box-out"} width={24} height={24} />
-      </button>
-      <button
-        onclick={() => {
-          downloadFile(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
-        }}
-      >
-        <Icon icon={"box-in"} width={24} height={24} />
-      </button>
-    </div>
-    <div></div>
+  <div class="tier-list-mode-buttons">
+    <button class="tier-list-mode-move" class:active={mode === "mode-move"} onclick={() => (mode = "mode-move")}>
+      <Icon icon={"move"} />
+    </button>
+    <button class="tier-list-mode-delete" class:active={mode === "mode-delete"} onclick={() => (mode = "mode-delete")}>
+      <Icon icon={"trash"} />
+    </button>
+    <button
+      class="tier-list-upload"
+      onclick={async () => {
+        const file = await requestFileUpload("application/json");
+        if (file === null) return;
+        tierlist = JSON.parse(await readAsText(file));
+      }}
+    >
+      <Icon icon={"box-out"} width={20} height={20} />
+    </button>
+    <button
+      class="tier-list-download"
+      onclick={() => {
+        downloadFile(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
+      }}
+    >
+      <Icon icon={"box-in"} width={20} height={20} />
+    </button>
+  </div>
 
+  <div class="tier-list">
     {#each tierlist.tiers as tier, tier_index}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="tier"
-        style:background-color={tier.color}
+        style:color={tier.color}
+        style:outline-color={tier.color}
         ondragover={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -107,14 +102,19 @@
         }}
         ondrop={onDrop}
       >
-        <div class="tier-name-edit" contenteditable="true" bind:textContent={tier.name}></div>
+        <div
+          class="tier-name-edit"
+          contenteditable="true"
+          style:outline-color={tier.color}
+          bind:textContent={tier.name}
+        ></div>
         {@render DeleteOverlay(() => {
           tierlist.uncategorized.push(...tier.items);
           tierlist.tiers.splice(tier_index, 1);
         })}
       </div>
 
-      <div class="tier-items">
+      <div class="tier-items" style:background-color={tier.color}>
         {#each tier.items as item, item_index (item.id)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
@@ -155,14 +155,14 @@
             ];
           }}
         >
-          <Icon icon="caret-up" width={16} height={16} />
+          <Icon icon="caret-up" width={20} height={20} />
         </button>
         <label style="position: relative;">
-          <Icon icon="palette" width={14} height={14} />
+          <Icon icon="palette" width={20} height={20} />
           <input
             type="color"
             bind:value={tier.color}
-            style="width: 0; height: 0; border: none; background: none; bottom: 0; right: 0; position: absolute;"
+            style="width: 0; height: 0; border: none; background: none; bottom: 0; right: 0; position: absolute; padding: 0;"
           />
         </label>
         <button
@@ -174,26 +174,10 @@
             ];
           }}
         >
-          <Icon icon="caret-down" width={16} height={16} />
+          <Icon icon="caret-down" width={20} height={20} />
         </button>
       </div>
     {/each}
-    <div></div>
-    <div class="tier-create">
-      <button
-        onclick={() => {
-          tierlist.tiers.push({
-            color: "#ececec",
-            items: [],
-            name: "",
-          });
-        }}
-      >
-        <Icon icon="plus-circle" width={24} height={24} />
-      </button>
-    </div>
-    <div></div>
-    <div></div>
     <div class="uncategorized">
       <div class="tier-items">
         {#each tierlist.uncategorized as item, item_index (item.id)}
@@ -232,10 +216,10 @@
   <h3>Uploading an image</h3>
   <ul class="how-to-upload">
     <li><div>Paste an image from your clipboard.</div></li>
-    <li><div>Drag an image from your desktop</div></li>
+    <li><div>Drag an image from your desktop.</div></li>
     <li>
       <div>
-        Select images to upload
+        Select images to upload:
         <button
           style="display: inline; color: white;"
           onclick={async () => {
@@ -306,13 +290,18 @@
     width: 70vw;
     max-width: 100vw;
     padding: 0 12px;
+    perspective: 8000px;
     flex-grow: 1;
   }
 
   .tier-list {
     display: grid;
+    row-gap: 1rem;
     grid-template-columns: max-content 1fr auto;
-    grid-template-rows: 1fr;
+    grid-template-rows: auto;
+
+    transform-style: preserve-3d;
+    transform: rotateX(20deg);
   }
 
   .tier-list-meta-buttons {
@@ -332,39 +321,12 @@
     margin-left: 8px;
   }
 
-  .tier {
-    box-shadow: inset 0px 0px 20px 3px #0002;
-    position: relative;
-  }
-
   .tier-create {
     display: flex;
     justify-content: center;
     align-items: start;
     padding: 8px;
     grid-column: 1 / 3;
-
-    > button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      aspect-ratio: 1;
-      padding: 0.1em;
-      font-size: 1.3em;
-      line-height: 1;
-      color: #fff3;
-
-      &:hover {
-        color: white;
-      }
-
-      &:disabled {
-        pointer-events: none;
-      }
-    }
   }
 
   .tier-list-mode-buttons {
@@ -372,13 +334,17 @@
     padding: 0 0 8px 0;
 
     .tier-list-mode-move,
-    .tier-list-mode-delete {
+    .tier-list-mode-delete,
+    .tier-list-download,
+    .tier-list-upload {
       border: 1px solid #666;
       color: #bbb;
-      flex-grow: 1;
+      /* flex-grow: 1; */
       aspect-ratio: unset;
       border-radius: 4px;
       opacity: 0.5;
+      height: 35px;
+      aspect-ratio: 1;
 
       &.active {
         opacity: 0.75;
@@ -402,6 +368,10 @@
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
       margin-left: -0.5px;
+    }
+    .tier-list-download,
+    .tier-list-upload {
+      margin-left: 0.4em;
     }
   }
 
@@ -428,24 +398,34 @@
   }
 
   .tier-reorder-buttons {
-    margin-left: 6px;
+    margin-left: 10px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: start;
     gap: 0em;
+    font-size: 1em;
+    height: 100%;
+    width: 90px;
+    aspect-ratio: 1;
+  }
+
+  .tier {
+    position: relative;
+    width: 90px;
   }
 
   .tier-name-edit {
-    min-width: 80px;
     height: 100%;
-    padding: 10px;
-    color: black;
+    padding: 0px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     font-weight: 400;
-    font-size: 1.1em;
+    font-size: 3rem;
+
+    outline: none !important;
 
     .dragging & {
       pointer-events: none;
@@ -456,13 +436,7 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    background-color: #fff1;
-    min-height: 80px;
-
-    :where(&:not(:nth-child(3))) {
-      border-top: 1px solid #0005;
-      margin-top: -1px;
-    }
+    min-height: 90px;
   }
 
   .tier-item {
@@ -470,9 +444,8 @@
     cursor: pointer;
     position: relative;
     line-height: 0;
-
     > img {
-      max-height: 100px;
+      max-height: 90px;
     }
   }
 
@@ -480,8 +453,8 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    border: 1px solid transparent;
-    --drop-target-border-color: cornflowerblue;
+    border: 2px solid transparent;
+    --drop-target-border-color: rgba(255, 255, 255, 1);
 
     &.after {
       left: 50%;
@@ -502,7 +475,7 @@
   }
 
   :first-child > .drop-handle.before {
-    border-width: 2px;
+    border-width: 4px;
   }
 
   .drop-handle-container {
@@ -518,7 +491,7 @@
     outline: 2px #fff3 dashed;
     outline-offset: -2px;
     background: transparent;
-    grid-column: 1 / 3;
+    grid-column: 2 / 3;
     display: flex;
     flex-direction: column;
     position: relative;

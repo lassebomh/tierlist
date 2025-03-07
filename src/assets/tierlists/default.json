@@ -5,27 +5,32 @@
     {
       "name": "S",
       "items": [],
-      "color": "#ff8080"
+      "color": "#02aff0"
     },
     {
       "name": "A",
       "items": [],
-      "color": "#ffbf80"
+      "color": "#00ae50"
     },
     {
       "name": "B",
       "items": [],
-      "color": "#ffdf80"
+      "color": "#92cf52"
     },
     {
       "name": "C",
       "items": [],
-      "color": "#ffff80"
+      "color": "#fed966"
+    },
+    {
+      "name": "D",
+      "items": [],
+      "color": "#f7861c"
     },
     {
       "name": "F",
       "items": [],
-      "color": "#80ffff"
+      "color": "#bf0001"
     }
   ]
 }
