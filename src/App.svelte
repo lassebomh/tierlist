@@ -445,7 +445,7 @@
     position: relative;
     line-height: 0;
     > img {
-      max-height: 90px;
+      height: 90px;
     }
   }
 
