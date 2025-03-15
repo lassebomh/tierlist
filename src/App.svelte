@@ -2,21 +2,30 @@
   import Icon from "./components/Icon.svelte";
   import {
     downloadFile,
-    readAsText,
+    blobAsText,
     slugify,
     requestMultipleFilesUpload,
     requestFileUpload,
     getImageSegments,
     randomId,
+    blobAsDataURL,
   } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
-  import { filesToItems, type TierList } from "./lib/tierlist";
+  import { type Item, type TierList } from "./lib/tierlist";
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
     if (from === undefined || target === undefined) return;
     if (from.type === "files") {
-      const items = await filesToItems(...e.dataTransfer!.files);
+      const items = new Array<Item>();
+
+      for (const file of e.dataTransfer!.files) {
+        items.push({
+          id: randomId(),
+          src: await blobAsDataURL(file),
+        });
+      }
+
       let destination = target.item_index;
       const target_items =
         target.tier_index === null ? tierlist.uncategorized : tierlist.tiers[target.tier_index].items;
@@ -65,7 +74,12 @@
   onpaste={async (e) => {
     if (e.clipboardData === null) return;
     e.preventDefault();
-    tierlist.uncategorized.push(...(await filesToItems(...e.clipboardData.files)));
+    for (const file of e.clipboardData.files) {
+      tierlist.uncategorized.push({
+        id: randomId(),
+        src: await blobAsDataURL(file),
+      });
+    }
   }}
 />
 <main class:dragging={from !== undefined} class={mode}>
@@ -92,7 +106,7 @@
       onclick={async () => {
         const file = await requestFileUpload("application/json");
         if (file === null) return;
-        tierlist = JSON.parse(await readAsText(file));
+        tierlist = JSON.parse(await blobAsText(file));
       }}
     >
       <Icon icon={"box-out"} width={20} height={20} />
@@ -248,7 +262,12 @@
           onclick={async () => {
             let files = await requestMultipleFilesUpload("image/*");
             if (files === null) return;
-            tierlist.uncategorized.push(...(await filesToItems(...files)));
+            for (const file of files) {
+              tierlist.uncategorized.push({
+                id: randomId(),
+                src: await blobAsDataURL(file),
+              });
+            }
           }}
         >
           <Icon icon={"box-out"} width={16} height={16} />
@@ -262,12 +281,13 @@
             let file = await requestFileUpload("image/*");
             if (file === null) return;
 
-            const segments = await getImageSegments(file);
+            const blobs = await getImageSegments(file);
+            const dataUrls = await Promise.all(blobs.map(blobAsDataURL));
 
             tierlist.uncategorized.push(
-              ...segments.map((src) => ({
+              ...dataUrls.map((url) => ({
                 id: randomId(),
-                src: src,
+                src: url,
               }))
             );
           }}
@@ -334,18 +354,20 @@
     width: 70vw;
     max-width: 100vw;
     padding: 0 12px;
-    perspective: 8000px;
+    /* perspective: 8000px; */
     flex-grow: 1;
+    margin-bottom: 100vh;
   }
 
   .tier-list {
+    margin-top: 2rem;
     display: grid;
     row-gap: 1rem;
     grid-template-columns: max-content 1fr auto;
     grid-template-rows: auto;
 
-    transform-style: preserve-3d;
-    transform: rotateX(20deg);
+    /* transform-style: preserve-3d; */
+    /* transform: rotateX(20deg); */
   }
 
   .tier-list-meta-buttons {

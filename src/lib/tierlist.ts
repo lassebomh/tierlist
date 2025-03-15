@@ -1,4 +1,4 @@
-import { randomId, readAsDataURL } from "./utils";
+import { randomId, blobAsDataURL } from "./utils";
 
 export type Item = {
   src: string;
@@ -12,14 +12,3 @@ export type TierList = {
   tiers: Tier[];
   uncategorized: Item[];
 };
-
-export function filesToItems(...files: File[]): Promise<Item[]> {
-  return Promise.all(
-    files
-      .filter((file) => file.type.startsWith("image/"))
-      .map(async (file) => ({
-        id: randomId(),
-        src: await readAsDataURL(file),
-      }))
-  );
-}

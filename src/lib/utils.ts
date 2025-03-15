@@ -47,9 +47,8 @@ function decToRgba(dec: number) {
   return { r, g, b, a };
 }
 
-const downloadAnchor = document.createElement("a");
-
 export function downloadFile(filename: string, contents: BlobPart) {
+  const downloadAnchor = document.createElement("a");
   const reader = new FileReader();
   reader.readAsDataURL(new Blob([contents]));
   reader.addEventListener("load", () => {
@@ -61,15 +60,15 @@ export function downloadFile(filename: string, contents: BlobPart) {
   });
 }
 
-let uploadInput = document.createElement("input");
-uploadInput.type = "file";
-
 export async function requestFileUpload(type: string): Promise<File | null> {
   return (await requestMultipleFilesUpload(type))?.at(0) ?? null;
 }
 
 export function requestMultipleFilesUpload(type: string): Promise<File[] | null> {
-  let cleanupFiles: any;
+  const uploadInput = document.createElement("input");
+  uploadInput.type = "file";
+
+  let cleanupFiles: () => void;
 
   const filesPromise = new Promise<File[] | null>((res) => {
     function onchange() {
@@ -88,7 +87,7 @@ export function requestMultipleFilesUpload(type: string): Promise<File[] | null>
     cleanupFiles = () => uploadInput.removeEventListener("change", onchange);
   });
 
-  let cleanupFocus: any;
+  let cleanupFocus: () => void;
 
   const focusPromise = new Promise<null>((res) => {
     function onfocus() {
@@ -108,7 +107,7 @@ export function requestMultipleFilesUpload(type: string): Promise<File[] | null>
   return race;
 }
 
-export function readAsText(file: Blob): Promise<string> {
+export function blobAsText(file: Blob): Promise<string> {
   return new Promise<string>((res) => {
     const onload = () => {
       res(reader.result as any);
@@ -118,7 +117,7 @@ export function readAsText(file: Blob): Promise<string> {
     reader.readAsText(file);
   });
 }
-export function readAsDataURL(file: Blob): Promise<string> {
+export function blobAsDataURL(file: Blob): Promise<string> {
   return new Promise<string>((res) => {
     const onload = () => {
       res(reader.result as any);
@@ -151,7 +150,7 @@ export async function getImageSegments(blob: Blob) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  document.body.prepend(canvas);
+  // document.body.prepend(canvas);
 
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bmp, 0, 0);
@@ -240,18 +239,11 @@ export async function getImageSegments(blob: Blob) {
     }
   }
 
-  for (const pnt of bgPoints) {
-    imageData.data[pnt * 4] = 0;
-    imageData.data[pnt * 4 + 1] = 0;
-    imageData.data[pnt * 4 + 2] = 255;
-    imageData.data[pnt * 4 + 3] = 100;
-  }
-
-  // for (const pnt of borderPoints) {
+  // for (const pnt of bgPoints) {
   //   imageData.data[pnt * 4] = 0;
   //   imageData.data[pnt * 4 + 1] = 0;
   //   imageData.data[pnt * 4 + 2] = 255;
-  //   imageData.data[pnt * 4 + 3] = 255;
+  //   imageData.data[pnt * 4 + 3] = 100;
   // }
 
   const pnts = new Set<number>();
@@ -333,9 +325,9 @@ export async function getImageSegments(blob: Blob) {
 
   const components = new Set(pntsMap.values());
 
-  const dataUrls = new Array<string>();
+  const blobPromises = new Array<Promise<Blob>>();
 
-  let colorI = 0;
+  // let colorI = 0;
 
   for (const component of components) {
     let minX = width;
@@ -345,7 +337,7 @@ export async function getImageSegments(blob: Blob) {
 
     for (const pnt of component) {
       const x = pnt % width;
-      const y = (pnt - x) / height;
+      const y = Math.floor(pnt / width);
       if (minX > x) minX = x;
       if (maxX < x) maxX = x;
       if (minY > y) minY = y;
@@ -362,26 +354,30 @@ export async function getImageSegments(blob: Blob) {
     const componentCanvas = document.createElement("canvas");
     componentCanvas.width = cw;
     componentCanvas.height = ch;
-    componentCanvas.style.width = "400px";
     const componentCtx = componentCanvas.getContext("2d")!;
 
     componentCtx.putImageData(componentImageData, 0, 0);
-    dataUrls.push(componentCanvas.toDataURL());
 
-    const { r, g, b } = HSVtoRGB(colorI++ / components.size, 1, 1);
+    blobPromises.push(
+      new Promise((res) => {
+        componentCanvas.toBlob((blob) => res(blob!));
+      })
+    );
 
-    for (const pnt of component) {
-      imageData.data[pnt * 4] = r;
-      imageData.data[pnt * 4 + 1] = g;
-      imageData.data[pnt * 4 + 2] = b;
-      imageData.data[pnt * 4 + 3] = 255;
-    }
+    // const { r, g, b } = HSVtoRGB(colorI++ / components.size, 1, 1);
+
+    // for (const pnt of component) {
+    //   imageData.data[pnt * 4] = r;
+    //   imageData.data[pnt * 4 + 1] = g;
+    //   imageData.data[pnt * 4 + 2] = b;
+    //   imageData.data[pnt * 4 + 3] = 255;
+    // }
   }
-  ctx.putImageData(imageData, 0, 0);
+  // ctx.putImageData(imageData, 0, 0);
 
-  return [];
+  return Promise.all(blobPromises);
 }
 
-const blob = await (await fetch("melee.png")).blob();
+// const blob = await (await fetch("melee2.png")).blob();
 
-await getImageSegments(blob);
+// await getImageSegments(blob);
