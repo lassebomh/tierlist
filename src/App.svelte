@@ -1,6 +1,14 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import { downloadFile, readAsText, slugify, requestMultipleFilesUpload, requestFileUpload } from "./lib/utils";
+  import {
+    downloadFile,
+    readAsText,
+    slugify,
+    requestMultipleFilesUpload,
+    requestFileUpload,
+    getImageSegments,
+    randomId,
+  } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
   import { filesToItems, type TierList } from "./lib/tierlist";
 
@@ -241,6 +249,27 @@
             let files = await requestMultipleFilesUpload("image/*");
             if (files === null) return;
             tierlist.uncategorized.push(...(await filesToItems(...files)));
+          }}
+        >
+          <Icon icon={"box-out"} width={16} height={16} />
+        </button>
+
+        or upload a sprite sheet:
+        <button
+          title="Click to select files"
+          style="display: inline; color: white;"
+          onclick={async () => {
+            let file = await requestFileUpload("image/*");
+            if (file === null) return;
+
+            const segments = await getImageSegments(file);
+
+            tierlist.uncategorized.push(
+              ...segments.map((src) => ({
+                id: randomId(),
+                src: src,
+              }))
+            );
           }}
         >
           <Icon icon={"box-out"} width={16} height={16} />
