@@ -311,6 +311,6 @@ export async function extract_image_segments(blob: Blob) {
   return Promise.all(blobPromises);
 }
 
-const blob = await (await fetch("plant.png")).blob();
+// const blob = await (await fetch("plant.png")).blob();
 
-await extract_image_segments(blob);
+// await extract_image_segments(blob);

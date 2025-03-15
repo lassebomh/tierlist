@@ -52,6 +52,26 @@
   let mode = $state<"mode-move" | "mode-delete">("mode-move");
 
   let tierlist = $state<TierList>(tierListDefault);
+
+  async function askLoadTemplate(path: string) {
+    const hasItems = tierlist.uncategorized.length > 0 || tierlist.tiers.map((x) => x.items.length).some((x) => x > 0);
+
+    if (hasItems && !confirm("Loading this template will delete your current tier list. Are you sure?")) return;
+
+    const res = await fetch(path);
+    const blob = await res.blob();
+
+    const segments = await extract_image_segments(blob);
+    const dataurls = await Promise.all(segments.map(blob_to_dataurl));
+    tierlist = structuredClone(tierListDefault);
+
+    for (const dataurl of dataurls) {
+      tierlist.uncategorized.push({
+        id: random_id(),
+        src: dataurl,
+      });
+    }
+  }
 </script>
 
 <svelte:document
@@ -241,54 +261,60 @@
       </div>
     </div>
   </div>
-  <h3>Uploading an image</h3>
-  <ul class="how-to-upload">
-    <li><div>Paste an image from your clipboard.</div></li>
-    <li><div>Drag an image from your desktop.</div></li>
-    <li>
-      <div>
-        Select images to upload:
-        <button
-          title="Click to select files"
-          style="display: inline; color: white;"
-          onclick={async () => {
-            let files = await request_multi_file_upload("image/*");
-            if (files === null) return;
-            for (const file of files) {
-              tierlist.uncategorized.push({
-                id: random_id(),
-                src: await blob_to_dataurl(file),
-              });
-            }
-          }}
-        >
-          <Icon icon={"box-out"} width={16} height={16} />
-        </button>
+  <div class="information">
+    <h3>Uploading an image</h3>
+    <ul class="how-to-upload">
+      <li><div>Paste an image from your clipboard.</div></li>
+      <li><div>Drag an image from your desktop.</div></li>
+      <li>
+        <div>
+          Select images to upload:
+          <button
+            title="Click to select files"
+            style="display: inline; color: white;"
+            onclick={async () => {
+              let files = await request_multi_file_upload("image/*");
+              if (files === null) return;
+              for (const file of files) {
+                tierlist.uncategorized.push({
+                  id: random_id(),
+                  src: await blob_to_dataurl(file),
+                });
+              }
+            }}
+          >
+            <Icon icon={"box-out"} width={16} height={16} />
+          </button>
 
-        or upload a sprite sheet:
-        <button
-          title="Click to select files"
-          style="display: inline; color: white;"
-          onclick={async () => {
-            let file = await request_file_upload("image/*");
-            if (file === null) return;
+          or upload a sprite sheet:
+          <button
+            title="Click to select files"
+            style="display: inline; color: white;"
+            onclick={async () => {
+              let file = await request_file_upload("image/*");
+              if (file === null) return;
 
-            const blobs = await extract_image_segments(file);
-            const dataUrls = await Promise.all(blobs.map(blob_to_dataurl));
+              const blobs = await extract_image_segments(file);
+              const dataUrls = await Promise.all(blobs.map(blob_to_dataurl));
 
-            tierlist.uncategorized.push(
-              ...dataUrls.map((url) => ({
-                id: random_id(),
-                src: url,
-              }))
-            );
-          }}
-        >
-          <Icon icon={"box-out"} width={16} height={16} />
-        </button>
-      </div>
-    </li>
-  </ul>
+              tierlist.uncategorized.push(
+                ...dataUrls.map((url) => ({
+                  id: random_id(),
+                  src: url,
+                }))
+              );
+            }}
+          >
+            <Icon icon={"box-out"} width={16} height={16} />
+          </button>
+        </div>
+      </li>
+    </ul>
+    <h3>Templates</h3>
+    <ul class="templates">
+      <li><button onclick={() => askLoadTemplate("melee.png")}>Super Smash Bros. Melee</button></li>
+    </ul>
+  </div>
 </main>
 
 {#snippet DropHandle(tier_index: number | null, item_index: number, before: boolean)}
@@ -565,6 +591,37 @@
       align-items: center;
       gap: 0.25em;
       flex-wrap: wrap;
+    }
+  }
+
+  h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.2rem;
+    padding-bottom: 0;
+  }
+  ul {
+    margin-top: 0.2rem;
+    padding-left: 1rem;
+  }
+
+  .information {
+    max-width: 500px;
+    margin: auto;
+    margin-top: 3em;
+  }
+
+  .templates {
+    list-style: disclosure-closed;
+    button {
+      font: inherit;
+      color: inherit;
+
+      margin: 0 -4px;
+      padding: 0 4px;
+
+      &:hover {
+        outline: 1px solid cornflowerblue;
+      }
     }
   }
 </style>

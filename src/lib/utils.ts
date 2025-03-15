@@ -24,8 +24,6 @@ export function request_multi_file_upload(type: string): Promise<File[] | null> 
   const filesPromise = new Promise<File[] | null>((res) => {
     function onchange() {
       const { files } = uploadInput;
-      console.log(files);
-
       if (files?.length) {
         res([...files]);
       } else {
