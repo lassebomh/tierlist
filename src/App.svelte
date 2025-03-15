@@ -62,13 +62,24 @@
 />
 <main class:dragging={from !== undefined} class={mode}>
   <div class="tier-list-mode-buttons">
-    <button class="tier-list-mode-move" class:active={mode === "mode-move"} onclick={() => (mode = "mode-move")}>
+    <button
+      title="Move mode"
+      class="tier-list-mode-move"
+      class:active={mode === "mode-move"}
+      onclick={() => (mode = "mode-move")}
+    >
       <Icon icon={"move"} />
     </button>
-    <button class="tier-list-mode-delete" class:active={mode === "mode-delete"} onclick={() => (mode = "mode-delete")}>
+    <button
+      title="Delete mode"
+      class="tier-list-mode-delete"
+      class:active={mode === "mode-delete"}
+      onclick={() => (mode = "mode-delete")}
+    >
       <Icon icon={"trash"} />
     </button>
     <button
+      title="Upload a tier list"
       class="tier-list-upload"
       onclick={async () => {
         const file = await requestFileUpload("application/json");
@@ -79,6 +90,7 @@
       <Icon icon={"box-out"} width={20} height={20} />
     </button>
     <button
+      title="Save tier list"
       class="tier-list-download"
       onclick={() => {
         downloadFile(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
@@ -147,6 +159,7 @@
       </div>
       <div class="tier-reorder-buttons">
         <button
+          title="Move tier up"
           disabled={tier_index === 0}
           onclick={() => {
             [tierlist.tiers[tier_index], tierlist.tiers[tier_index - 1]] = [
@@ -160,12 +173,14 @@
         <label style="position: relative;">
           <Icon icon="palette" width={20} height={20} />
           <input
+            title="Edit color"
             type="color"
             bind:value={tier.color}
             style="width: 0; height: 0; border: none; background: none; bottom: 0; right: 0; position: absolute; padding: 0;"
           />
         </label>
         <button
+          title="Move tier down"
           disabled={tier_index === tierlist.tiers.length - 1}
           onclick={() => {
             [tierlist.tiers[tier_index], tierlist.tiers[tier_index + 1]] = [
@@ -212,7 +227,6 @@
       </div>
     </div>
   </div>
-  <!-- <button class="upload-images">Upload images</button> -->
   <h3>Uploading an image</h3>
   <ul class="how-to-upload">
     <li><div>Paste an image from your clipboard.</div></li>
@@ -221,6 +235,7 @@
       <div>
         Select images to upload:
         <button
+          title="Click to select files"
           style="display: inline; color: white;"
           onclick={async () => {
             let files = await requestMultipleFilesUpload("image/*");
