@@ -1,5 +1,4 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -17,7 +16,6 @@ body {
   flex-direction: column;
   min-height: 100vh;
   font-family: 'Runescape Bold';
-  
 }
 
 * {
@@ -27,4 +25,5 @@ body {
 @font-face {
   font-family: 'Runescape Bold';
   src: url(/fonts/runescape_bold.ttf);
+  font-display: block;
 }
