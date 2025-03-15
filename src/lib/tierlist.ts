@@ -1,5 +1,3 @@
-import { randomId, blobAsDataURL } from "./utils";
-
 export type Item = {
   src: string;
   id: number;

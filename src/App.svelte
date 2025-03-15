@@ -1,17 +1,9 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import {
-    downloadFile,
-    blobAsText,
-    slugify,
-    requestMultipleFilesUpload,
-    requestFileUpload,
-    getImageSegments,
-    randomId,
-    blobAsDataURL,
-  } from "./lib/utils";
+  import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "./lib/utils";
   import tierListDefault from "./assets/tierlists/default.json";
   import { type Item, type TierList } from "./lib/tierlist";
+  import { blob_to_dataurl, blob_to_text, extract_image_segments } from "./lib/blob";
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
@@ -21,8 +13,8 @@
 
       for (const file of e.dataTransfer!.files) {
         items.push({
-          id: randomId(),
-          src: await blobAsDataURL(file),
+          id: random_id(),
+          src: await blob_to_dataurl(file),
         });
       }
 
@@ -76,8 +68,8 @@
     e.preventDefault();
     for (const file of e.clipboardData.files) {
       tierlist.uncategorized.push({
-        id: randomId(),
-        src: await blobAsDataURL(file),
+        id: random_id(),
+        src: await blob_to_dataurl(file),
       });
     }
   }}
@@ -104,9 +96,9 @@
       title="Upload a tier list"
       class="tier-list-upload"
       onclick={async () => {
-        const file = await requestFileUpload("application/json");
+        const file = await request_file_upload("application/json");
         if (file === null) return;
-        tierlist = JSON.parse(await blobAsText(file));
+        tierlist = JSON.parse(await blob_to_text(file));
       }}
     >
       <Icon icon={"box-out"} width={20} height={20} />
@@ -115,7 +107,7 @@
       title="Save tier list"
       class="tier-list-download"
       onclick={() => {
-        downloadFile(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
+        download_file(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
       }}
     >
       <Icon icon={"box-in"} width={20} height={20} />
@@ -260,12 +252,12 @@
           title="Click to select files"
           style="display: inline; color: white;"
           onclick={async () => {
-            let files = await requestMultipleFilesUpload("image/*");
+            let files = await request_multi_file_upload("image/*");
             if (files === null) return;
             for (const file of files) {
               tierlist.uncategorized.push({
-                id: randomId(),
-                src: await blobAsDataURL(file),
+                id: random_id(),
+                src: await blob_to_dataurl(file),
               });
             }
           }}
@@ -278,15 +270,15 @@
           title="Click to select files"
           style="display: inline; color: white;"
           onclick={async () => {
-            let file = await requestFileUpload("image/*");
+            let file = await request_file_upload("image/*");
             if (file === null) return;
 
-            const blobs = await getImageSegments(file);
-            const dataUrls = await Promise.all(blobs.map(blobAsDataURL));
+            const blobs = await extract_image_segments(file);
+            const dataUrls = await Promise.all(blobs.map(blob_to_dataurl));
 
             tierlist.uncategorized.push(
               ...dataUrls.map((url) => ({
-                id: randomId(),
+                id: random_id(),
                 src: url,
               }))
             );
