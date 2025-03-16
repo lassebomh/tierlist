@@ -329,8 +329,9 @@
     position: relative;
     line-height: 0;
     > img {
-      height: 90px;
+      height: 86px;
       image-rendering: pixelated;
+      margin: 2px;
     }
   }
 
