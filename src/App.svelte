@@ -150,7 +150,9 @@
       >
         <div
           class="tier-name-edit"
+          spellcheck="false"
           contenteditable="true"
+          style:font-size={tier.name.length > 1 ? "1.25rem" : "3rem"}
           style:outline-color={tier.color}
           bind:textContent={tier.name}
         ></div>
@@ -313,6 +315,13 @@
     <h3>Templates</h3>
     <ul class="templates">
       <li><button onclick={() => askLoadTemplate("melee.png")}>Super Smash Bros. Melee</button></li>
+      <li>
+        <button onclick={() => askLoadTemplate("tabg_blessings.png")}>Totally Accurate Battlegrounds (Blessings)</button
+        >
+      </li>
+      <li>
+        <button onclick={() => askLoadTemplate("tabg_grenades.png")}>Totally Accurate Battlegrounds (Grenades)</button>
+      </li>
     </ul>
   </div>
 </main>
@@ -496,7 +505,8 @@
 
   .tier {
     position: relative;
-    width: 90px;
+    min-width: 90px;
+    padding: 0 12px;
   }
 
   .tier-name-edit {
@@ -507,7 +517,7 @@
     justify-content: center;
     align-items: center;
     font-weight: 400;
-    font-size: 3rem;
+    line-height: 1.4rem;
 
     outline: none !important;
 

@@ -119,10 +119,7 @@ export async function extract_image_segments(blob: Blob) {
     ignore.add(pnt);
 
     if (mat[pnt] === dominantColor) {
-      const x = pnt % width;
-      const y = Math.floor(pnt / width);
       // paint(pnt, rgba_to_int(255, 0, 0, 100));
-
       // await tick();
       bgPoints[pnt] = true;
     } else {
@@ -196,9 +193,8 @@ export async function extract_image_segments(blob: Blob) {
     const component = leftComponent ?? upComponent ?? downComponent ?? rightComponent ?? new Set();
 
     // const componentColor = getOrCreateColor(component);
-
-    pntsMap.set(pnt, component);
     // paint(pnt, componentColor);
+    pntsMap.set(pnt, component);
     component.add(pnt);
 
     if (rightIsValid && rightComponent !== component) {
