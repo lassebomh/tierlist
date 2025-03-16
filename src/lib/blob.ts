@@ -21,18 +21,19 @@ export function blob_to_dataurl(file: Blob): Promise<string> {
   });
 }
 
-export async function extract_image_segments(blob: Blob) {
+export async function extract_image_segments(blob: Blob): Promise<Blob[]> {
   const bmp = await createImageBitmap(blob);
   const { width, height } = bmp;
 
-  const canvas = document.createElement("canvas");
-  canvas.style.imageRendering = "pixelated";
+  const canvas = new OffscreenCanvas(width, height);
 
-  canvas.width = width;
-  canvas.height = height;
+  // const canvas = document.createElement("canvas");
+  // canvas.width = width;
+  // canvas.height = height;
   // document.body.prepend(canvas);
+  // canvas.style.imageRendering = "pixelated";
 
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   ctx.imageSmoothingEnabled = false;
 
   ctx.drawImage(bmp, 0, 0);
@@ -47,7 +48,7 @@ export async function extract_image_segments(blob: Blob) {
   //   imageData.data[pnt * 4 + 3] = a;
   // }
 
-  // let PAINT_SPEED = 40;
+  // let PAINT_SPEED = 80;
 
   // async function tick() {
   //   if (paint_tick++ % PAINT_SPEED === 0)
@@ -85,20 +86,26 @@ export async function extract_image_segments(blob: Blob) {
     }
   }
 
+  let dominantColor = 0;
+  let dominantColorCount = 0;
   const counter = new Map<number, number>();
 
   for (const pnt of borderPoints) {
     const color = mat[pnt];
+    if (color === 0) {
+      dominantColor = 0;
+      break;
+    }
 
-    if (!counter.has(color)) {
-      counter.set(color, 1);
-    } else {
-      counter.set(color, counter.get(color)! + 1);
+    const count = (counter.get(color) ?? 0) + 1;
+
+    counter.set(color, count);
+
+    if (dominantColorCount < count) {
+      dominantColor = color;
+      dominantColorCount = count;
     }
   }
-
-  let dominantColor = 0;
-  let dominantColorCount = 0;
 
   for (const [color, count] of counter) {
     if (dominantColorCount < count) {
@@ -111,8 +118,6 @@ export async function extract_image_segments(blob: Blob) {
 
   const queue = Array.from(borderPoints);
   const ignore = new Set<number>(queue);
-
-  // const start = performance.now();
 
   while (queue.length) {
     const pnt = queue.shift()!;
@@ -149,8 +154,7 @@ export async function extract_image_segments(blob: Blob) {
     }
   }
 
-  // console.log(performance.now() - start);
-  // await frame();
+  // await tick();
 
   const pnts = new Set<number>();
   const pntsMap = new Map<number, Set<number>>();
@@ -171,7 +175,7 @@ export async function extract_image_segments(blob: Blob) {
     if (!bgPoints[i]) pnts.add(i);
   }
 
-  // PAINT_SPEED = 10;
+  // PAINT_SPEED = 80;
 
   for (const pnt of pnts) {
     // await tick();
@@ -256,8 +260,6 @@ export async function extract_image_segments(blob: Blob) {
 
   const blobPromises = new Array<Promise<Blob>>();
 
-  // let colorI = 0;
-
   for (const component of components) {
     let minX = width;
     let maxX = 0;
@@ -280,33 +282,22 @@ export async function extract_image_segments(blob: Blob) {
 
     const componentImageData = ctx.getImageData(cx, cy, cw, ch);
 
-    const componentCanvas = document.createElement("canvas");
-    componentCanvas.width = cw;
-    componentCanvas.height = ch;
+    const componentCanvas = new OffscreenCanvas(cw, ch);
     const componentCtx = componentCanvas.getContext("2d")!;
 
     componentCtx.putImageData(componentImageData, 0, 0);
 
-    blobPromises.push(
-      new Promise((res) => {
-        componentCanvas.toBlob((blob) => res(blob!));
-      })
-    );
-
-    // const { r, g, b } = HSVtoRGB(colorI++ / components.size, 1, 1);
-
-    // for (const pnt of component) {
-    //   imageData.data[pnt * 4] = r;
-    //   imageData.data[pnt * 4 + 1] = g;
-    //   imageData.data[pnt * 4 + 2] = b;
-    //   imageData.data[pnt * 4 + 3] = 255;
-    // }
+    blobPromises.push(componentCanvas.convertToBlob());
   }
-  // ctx.putImageData(imageData, 0, 0);
 
   return Promise.all(blobPromises);
 }
 
-// const blob = await (await fetch("plant.png")).blob();
+// const blob = await (await fetch("tierlists/melee.png")).blob();
+// const start = performance.now();
 
-// await extract_image_segments(blob);
+// for (let i = 0; i < 100; i++) {
+//   await extract_image_segments(blob);
+// }
+
+// console.log(performance.now() - start);

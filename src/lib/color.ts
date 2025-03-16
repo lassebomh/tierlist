@@ -37,6 +37,7 @@ export function hsv_to_rgb(h: number, s: number, v: number) {
 }
 
 export function rgba_to_int(r: number, g: number, b: number, a: number) {
+  if (a === 0) return 0;
   return r + (g << 8) + (b << 16) + (a << 24);
 }
 export function int_to_rgba(dec: number) {
