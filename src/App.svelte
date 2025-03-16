@@ -1,54 +1,9 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
   import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "./lib/utils";
-  import { type Item, type TierList, templates } from "./lib/tierlist";
+  import { type TierList, templates } from "./lib/tierlist";
   import { blob_to_dataurl, blob_to_text, extract_image_segments } from "./lib/blob";
-
-  async function onDrop(e: DragEvent) {
-    e.preventDefault();
-    if (from === undefined || target === undefined) return;
-    if (from.type === "files") {
-      const items = new Array<Item>();
-
-      for (const file of e.dataTransfer!.files) {
-        items.push({
-          id: random_id(),
-          src: await blob_to_dataurl(file),
-        });
-      }
-
-      let destination = target.item_index;
-      const target_items =
-        target.tier_index === null ? tierlist.uncategorized : tierlist.tiers[target.tier_index].items;
-      target_items.splice(destination, 0, ...items);
-    } else {
-      if (from.tier_index === target.tier_index && from.item_index === target.item_index) {
-        return;
-      }
-      const from_items = from.tier_index === null ? tierlist.uncategorized : tierlist.tiers[from.tier_index].items;
-      const from_item = from_items.splice(from.item_index, 1)[0];
-      let destination = target.item_index;
-      if (!target.before) {
-        destination += 1;
-      }
-      if (from.item_index < destination && from.tier_index === target.tier_index) {
-        destination -= 1;
-      }
-      const target_items =
-        target.tier_index === null ? tierlist.uncategorized : tierlist.tiers[target.tier_index].items;
-      target_items.splice(destination, 0, from_item);
-    }
-    from = undefined;
-    target = undefined;
-  }
-
-  type DragAction = { type: "item"; tier_index: number | null; item_index: number } | { type: "files" };
-  type DragTarget = { type: "item"; tier_index: number | null; item_index: number; before: boolean };
-
-  let from = $state<DragAction | undefined>();
-  let target = $state<DragTarget | undefined>();
-
-  let mode = $state<"mode-move" | "mode-delete">("mode-move");
+  import TierListEditor from "./components/TierListEditor.svelte";
 
   let tierlist = $state<TierList>(templates.empty());
 
@@ -59,29 +14,11 @@
 
     tierlist = await templates[key]();
   }
+
+  let mode = $state<"mode-delete" | "mode-move">("mode-move");
 </script>
 
-<svelte:document
-  ondragover={(e) => {
-    e.preventDefault();
-    target = undefined;
-    if (from !== undefined || !e.dataTransfer?.items?.length) {
-      return;
-    }
-    from = { type: "files" };
-  }}
-  onpaste={async (e) => {
-    if (e.clipboardData === null) return;
-    e.preventDefault();
-    for (const file of e.clipboardData.files) {
-      tierlist.uncategorized.push({
-        id: random_id(),
-        src: await blob_to_dataurl(file),
-      });
-    }
-  }}
-/>
-<main class:dragging={from !== undefined} class={mode}>
+<main class={mode}>
   <div class="tier-list-mode-buttons">
     <button
       title="Move mode"
@@ -121,135 +58,8 @@
     </button>
   </div>
 
-  <div class="tier-list">
-    {#each tierlist.tiers as tier, tier_index}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="tier"
-        style:color={tier.color}
-        style:outline-color={tier.color}
-        ondragover={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          target = { type: "item", tier_index, item_index: 0, before: true };
-        }}
-        ondrop={onDrop}
-      >
-        <div
-          class="tier-name-edit"
-          spellcheck="false"
-          contenteditable="true"
-          style:font-size={tier.name.length > 1 ? "1.25rem" : "3rem"}
-          style:outline-color={tier.color}
-          bind:textContent={tier.name}
-        ></div>
-        {@render DeleteOverlay(() => {
-          tierlist.uncategorized.push(...tier.items);
-          tierlist.tiers.splice(tier_index, 1);
-        })}
-      </div>
+  <TierListEditor bind:tierlist {mode} />
 
-      <div class="tier-items" style:background-color={tier.color}>
-        {#each tier.items as item, item_index (item.id)}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="tier-item"
-            draggable="true"
-            ondragstart={(e) => {
-              if (e.dataTransfer !== null) {
-                e.dataTransfer.effectAllowed = "move";
-              }
-              setTimeout(() => {
-                from = { type: "item", item_index, tier_index };
-              }, 0);
-            }}
-            ondragend={() => {
-              from = undefined;
-              target = undefined;
-            }}
-          >
-            <img src={item.src} alt={item.name} title={item.name} />
-            {@render DropHandle(tier_index, item_index, true)}
-            {@render DropHandle(tier_index, item_index, false)}
-            {@render DeleteOverlay(() => {
-              tier.items.splice(item_index, 1);
-            })}
-          </div>
-        {/each}
-        <div class="drop-handle-container" style="flex-grow:1;">
-          {@render DropHandle(tier_index, tier.items.length, true)}
-        </div>
-      </div>
-      <div class="tier-reorder-buttons">
-        <button
-          title="Move tier up"
-          disabled={tier_index === 0}
-          onclick={() => {
-            [tierlist.tiers[tier_index], tierlist.tiers[tier_index - 1]] = [
-              tierlist.tiers[tier_index - 1],
-              tierlist.tiers[tier_index],
-            ];
-          }}
-        >
-          <Icon icon="caret-up" width={20} height={20} />
-        </button>
-        <label style="position: relative;">
-          <Icon icon="palette" width={20} height={20} />
-          <input
-            title="Edit color"
-            type="color"
-            bind:value={tier.color}
-            style="width: 0; height: 0; border: none; background: none; bottom: 0; right: 0; position: absolute; padding: 0;"
-          />
-        </label>
-        <button
-          title="Move tier down"
-          disabled={tier_index === tierlist.tiers.length - 1}
-          onclick={() => {
-            [tierlist.tiers[tier_index], tierlist.tiers[tier_index + 1]] = [
-              tierlist.tiers[tier_index + 1],
-              tierlist.tiers[tier_index],
-            ];
-          }}
-        >
-          <Icon icon="caret-down" width={20} height={20} />
-        </button>
-      </div>
-    {/each}
-    <div class="uncategorized">
-      <div class="tier-items">
-        {#each tierlist.uncategorized as item, item_index (item.id)}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="tier-item"
-            draggable="true"
-            ondragstart={(e) => {
-              if (e.dataTransfer !== null) {
-                e.dataTransfer.effectAllowed = "move";
-              }
-              setTimeout(() => {
-                from = { type: "item", item_index, tier_index: null };
-              }, 0);
-            }}
-            ondragend={() => {
-              from = undefined;
-              target = undefined;
-            }}
-          >
-            <img src={item.src} alt={item.name} title={item.name} />
-            {@render DropHandle(null, item_index, true)}
-            {@render DropHandle(null, item_index, false)}
-            {@render DeleteOverlay(() => {
-              tierlist.uncategorized.splice(item_index, 1);
-            })}
-          </div>
-        {/each}
-        <div class="drop-handle-container" style="flex-grow:1;">
-          {@render DropHandle(null, tierlist.uncategorized.length, true)}
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="information">
     <h3>Uploading an image</h3>
     <ul class="how-to-upload">
@@ -316,55 +126,7 @@
   </div>
 </main>
 
-{#snippet DropHandle(tier_index: number | null, item_index: number, before: boolean)}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="drop-handle"
-    class:dragging-over={target?.tier_index === tier_index &&
-      ((target?.item_index === item_index && target?.before === before) ||
-        (target?.item_index + (before ? 1 : -1) === item_index && target?.before === !before))}
-    class:before
-    class:after={!before}
-    ondragover={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      target = { type: "item", tier_index, item_index, before };
-    }}
-    ondragenter={(e) => e.preventDefault()}
-    ondrop={onDrop}
-  ></div>
-{/snippet}
-
-{#snippet DeleteOverlay(onclick: () => void)}
-  <button class="delete-overlay" {onclick}>
-    <Icon icon={"trash"} />
-  </button>
-{/snippet}
-
 <style>
-  .delete-overlay {
-    inset: 0;
-    background-color: #0006;
-    position: absolute;
-    justify-content: start;
-    padding: 8px;
-    color: #ddd;
-    align-items: start;
-    display: none;
-    aspect-ratio: unset;
-    opacity: 1;
-
-    &:hover {
-      outline: 2px solid cornflowerblue;
-      opacity: 1;
-      z-index: 1;
-    }
-
-    .mode-delete & {
-      display: flex;
-    }
-  }
-
   main {
     margin: 5vmin auto;
     min-width: 95vmin;
@@ -376,40 +138,9 @@
     margin-bottom: 100vh;
   }
 
-  .tier-list {
-    margin-top: 2rem;
-    display: grid;
-    row-gap: 1rem;
-    grid-template-columns: max-content 1fr auto;
-    grid-template-rows: auto;
-
-    /* transform-style: preserve-3d; */
-    /* transform: rotateX(20deg); */
-  }
-
   .tier-list-meta-buttons {
     display: flex;
     margin-bottom: 8px;
-  }
-
-  .tier-list-title {
-    background-color: #ffffff09;
-    border-radius: 2px;
-    border: none;
-    color: white;
-    font-size: 1em;
-    padding: 8px;
-    flex-grow: 1;
-    margin-right: 4px;
-    margin-left: 8px;
-  }
-
-  .tier-create {
-    display: flex;
-    justify-content: center;
-    align-items: start;
-    padding: 8px;
-    grid-column: 1 / 3;
   }
 
   .tier-list-mode-buttons {
@@ -457,8 +188,7 @@
     }
   }
 
-  button,
-  label {
+  button {
     background: none;
     border: none;
     cursor: pointer;
@@ -476,112 +206,6 @@
 
     &:disabled {
       pointer-events: none;
-    }
-  }
-
-  .tier-reorder-buttons {
-    margin-left: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: start;
-    gap: 0em;
-    font-size: 1em;
-    height: 100%;
-    width: 90px;
-    aspect-ratio: 1;
-  }
-
-  .tier {
-    position: relative;
-    min-width: 90px;
-    padding: 0 12px;
-  }
-
-  .tier-name-edit {
-    height: 100%;
-    padding: 0px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-weight: 400;
-    line-height: 1.4rem;
-
-    outline: none !important;
-
-    .dragging & {
-      pointer-events: none;
-    }
-  }
-
-  .tier-items {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    min-height: 90px;
-  }
-
-  .tier-item {
-    display: content;
-    cursor: pointer;
-    position: relative;
-    line-height: 0;
-    > img {
-      height: 90px;
-      image-rendering: pixelated;
-    }
-  }
-
-  .drop-handle {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border: 2px solid transparent;
-    --drop-target-border-color: rgba(255, 255, 255, 1);
-
-    &.after {
-      left: 50%;
-      &.dragging-over {
-        border-right-color: var(--drop-target-border-color);
-      }
-    }
-    &.before {
-      right: 50%;
-      &.dragging-over {
-        border-left-color: var(--drop-target-border-color);
-      }
-    }
-
-    .dragging & {
-      pointer-events: all;
-    }
-  }
-
-  :first-child > .drop-handle.before {
-    border-width: 4px;
-  }
-
-  .drop-handle-container {
-    position: relative;
-    .drop-handle {
-      left: 0;
-      right: 0;
-    }
-  }
-
-  .uncategorized {
-    border-radius: 6px;
-    outline: 2px #fff3 dashed;
-    outline-offset: -2px;
-    background: transparent;
-    grid-column: 2 / 3;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-
-    .tier-items {
-      background-color: transparent;
     }
   }
 
@@ -605,9 +229,10 @@
   }
 
   .information {
-    max-width: 500px;
+    max-width: 550px;
     margin: auto;
     margin-top: 3em;
+    padding: 0 1rem;
   }
 
   .templates {
@@ -629,17 +254,6 @@
     main {
       padding: 0;
       width: 100%;
-      margin-top: 1rem;
-    }
-
-    .tier {
-      min-width: 50px;
-    }
-    .tier-reorder-buttons {
-      width: 40px;
-    }
-
-    .tier-list {
       margin-top: 1rem;
     }
 
