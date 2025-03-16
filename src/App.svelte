@@ -1,8 +1,7 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
   import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "./lib/utils";
-  import tierListDefault from "./assets/tierlists/default.json";
-  import { type Item, type TierList } from "./lib/tierlist";
+  import { type Item, type TierList, templates } from "./lib/tierlist";
   import { blob_to_dataurl, blob_to_text, extract_image_segments } from "./lib/blob";
 
   async function onDrop(e: DragEvent) {
@@ -51,26 +50,14 @@
 
   let mode = $state<"mode-move" | "mode-delete">("mode-move");
 
-  let tierlist = $state<TierList>(tierListDefault);
+  let tierlist = $state<TierList>(templates.empty());
 
-  async function askLoadTemplate(path: string) {
+  async function ask_load_template<T extends keyof typeof templates>(key: T) {
     const hasItems = tierlist.uncategorized.length > 0 || tierlist.tiers.map((x) => x.items.length).some((x) => x > 0);
 
     if (hasItems && !confirm("Loading this template will delete your current tier list. Are you sure?")) return;
 
-    const res = await fetch(path);
-    const blob = await res.blob();
-
-    const segments = await extract_image_segments(blob);
-    const dataurls = await Promise.all(segments.map(blob_to_dataurl));
-    tierlist = structuredClone(tierListDefault);
-
-    for (const dataurl of dataurls) {
-      tierlist.uncategorized.push({
-        id: random_id(),
-        src: dataurl,
-      });
-    }
+    tierlist = await templates[key]();
   }
 </script>
 
@@ -181,7 +168,7 @@
               target = undefined;
             }}
           >
-            <img src={item.src} alt="" />
+            <img src={item.src} alt={item.name} title={item.name} />
             {@render DropHandle(tier_index, item_index, true)}
             {@render DropHandle(tier_index, item_index, false)}
             {@render DeleteOverlay(() => {
@@ -249,7 +236,7 @@
               target = undefined;
             }}
           >
-            <img src={item.src} alt="" />
+            <img src={item.src} alt={item.name} title={item.name} />
             {@render DropHandle(null, item_index, true)}
             {@render DropHandle(null, item_index, false)}
             {@render DeleteOverlay(() => {
@@ -314,13 +301,16 @@
     </ul>
     <h3>Templates</h3>
     <ul class="templates">
-      <li><button onclick={() => askLoadTemplate("melee.png")}>Super Smash Bros. Melee</button></li>
+      <li><button onclick={() => ask_load_template("empty")}>Empty</button></li>
+      <li><button onclick={() => ask_load_template("melee")}>Super Smash Bros. Melee</button></li>
       <li>
-        <button onclick={() => askLoadTemplate("tabg_blessings.png")}>Totally Accurate Battlegrounds (Blessings)</button
-        >
+        <button onclick={() => ask_load_template("tabg_blessings")}>Totally Accurate Battlegrounds (Blessings)</button>
       </li>
       <li>
-        <button onclick={() => askLoadTemplate("tabg_grenades.png")}>Totally Accurate Battlegrounds (Grenades)</button>
+        <button onclick={() => ask_load_template("tabg_grenades")}>Totally Accurate Battlegrounds (Grenades)</button>
+      </li>
+      <li>
+        <button onclick={() => ask_load_template("balatro")}>Balatro</button>
       </li>
     </ul>
   </div>
@@ -540,6 +530,7 @@
     line-height: 0;
     > img {
       height: 90px;
+      image-rendering: pixelated;
     }
   }
 
