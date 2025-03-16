@@ -367,7 +367,7 @@
 
   main {
     margin: 5vmin auto;
-    min-width: 100vmin;
+    min-width: 95vmin;
     width: 70vw;
     max-width: 100vw;
     padding: 0 12px;
@@ -414,7 +414,7 @@
 
   .tier-list-mode-buttons {
     display: flex;
-    padding: 0 0 8px 0;
+    padding: 0;
 
     .tier-list-mode-move,
     .tier-list-mode-delete,
@@ -422,7 +422,6 @@
     .tier-list-upload {
       border: 1px solid #666;
       color: #bbb;
-      /* flex-grow: 1; */
       aspect-ratio: unset;
       border-radius: 4px;
       opacity: 0.5;
@@ -623,6 +622,30 @@
       &:hover {
         outline: 1px solid cornflowerblue;
       }
+    }
+  }
+
+  @media (700px >= width) {
+    main {
+      padding: 0;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .tier {
+      min-width: 50px;
+    }
+    .tier-reorder-buttons {
+      width: 40px;
+    }
+
+    .tier-list {
+      margin-top: 1rem;
+    }
+
+    .tier-list-mode-buttons {
+      justify-content: center;
+      margin-bottom: 0;
     }
   }
 </style>
