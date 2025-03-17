@@ -36,41 +36,16 @@
     >
       <Icon icon={"trash"} />
     </button>
-    <button
-      title="Upload a tier list"
-      class="tier-list-upload"
-      onclick={async () => {
-        const file = await request_file_upload("application/json");
-        if (file === null) return;
-        tierlist = JSON.parse(await blob_to_text(file));
-      }}
-    >
-      <Icon icon={"box-out"} width={20} height={20} />
-    </button>
-    <button
-      title="Save tier list"
-      class="tier-list-download"
-      onclick={() => {
-        download_file(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
-      }}
-    >
-      <Icon icon={"box-in"} width={20} height={20} />
-    </button>
   </div>
 
   <TierListEditor bind:tierlist {mode} />
 
   <div class="information">
-    <h3>Uploading an image</h3>
-    <ul class="how-to-upload">
-      <li><div>Paste an image from your clipboard.</div></li>
-      <li><div>Drag an image from your desktop.</div></li>
-      <li>
-        <div>
-          Select images to upload:
+    <div>
+      <h3>Actions</h3>
+      <ul class="actions">
+        <li>
           <button
-            title="Click to select files"
-            style="display: inline; color: white;"
             onclick={async () => {
               let files = await request_multi_file_upload("image/*");
               if (files === null) return;
@@ -80,15 +55,11 @@
                   src: await blob_to_dataurl(file),
                 });
               }
-            }}
+            }}>Upload images</button
           >
-            <Icon icon={"box-out"} width={16} height={16} />
-          </button>
-
-          or upload a sprite sheet:
+        </li>
+        <li>
           <button
-            title="Click to select files"
-            style="display: inline; color: white;"
             onclick={async () => {
               let file = await request_file_upload("image/*");
               if (file === null) return;
@@ -102,27 +73,59 @@
                   src: url,
                 }))
               );
-            }}
+            }}>Upload a spritesheet</button
           >
-            <Icon icon={"box-out"} width={16} height={16} />
-          </button>
-        </div>
-      </li>
-    </ul>
-    <h3>Templates</h3>
-    <ul class="templates">
-      <li><button onclick={() => ask_load_template("empty")}>Empty</button></li>
-      <li><button onclick={() => ask_load_template("melee")}>Super Smash Bros. Melee</button></li>
-      <li>
-        <button onclick={() => ask_load_template("tabg_blessings")}>Totally Accurate Battlegrounds (Blessings)</button>
-      </li>
-      <li>
-        <button onclick={() => ask_load_template("tabg_grenades")}>Totally Accurate Battlegrounds (Grenades)</button>
-      </li>
-      <li>
-        <button onclick={() => ask_load_template("balatro")}>Balatro</button>
-      </li>
-    </ul>
+        </li>
+      </ul>
+      <ul class="actions">
+        <li>
+          <button
+            onclick={() =>
+              tierlist.tiers.push({
+                color: "#666666",
+                name: "X",
+                items: [],
+              })}>Create a new tier</button
+          >
+        </li>
+      </ul>
+
+      <ul class="actions">
+        <li>
+          <button
+            onclick={() => {
+              download_file(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
+            }}>Save</button
+          >
+        </li>
+        <li>
+          <button
+            onclick={async () => {
+              const file = await request_file_upload("application/json");
+              if (file === null) return;
+              tierlist = JSON.parse(await blob_to_text(file));
+            }}>Load</button
+          >
+        </li>
+      </ul>
+    </div>
+    <div>
+      <h3>Templates</h3>
+      <ul class="actions">
+        <li><button onclick={() => ask_load_template("empty")}>Empty</button></li>
+        <li><button onclick={() => ask_load_template("melee")}>Super Smash Bros. Melee</button></li>
+        <li>
+          <button onclick={() => ask_load_template("tabg_blessings")}>Totally Accurate Battlegrounds (Blessings)</button
+          >
+        </li>
+        <li>
+          <button onclick={() => ask_load_template("tabg_grenades")}>Totally Accurate Battlegrounds (Grenades)</button>
+        </li>
+        <li>
+          <button onclick={() => ask_load_template("balatro")}>Balatro</button>
+        </li>
+      </ul>
+    </div>
   </div>
 </main>
 
@@ -130,7 +133,7 @@
   main {
     margin: 5vmin auto;
     min-width: 95vmin;
-    width: 70vw;
+    width: 80vw;
     max-width: 100vw;
     padding: 0 12px;
     /* perspective: 8000px; */
@@ -148,9 +151,7 @@
     padding: 0;
 
     .tier-list-mode-move,
-    .tier-list-mode-delete,
-    .tier-list-download,
-    .tier-list-upload {
+    .tier-list-mode-delete {
       border: 1px solid #666;
       color: #bbb;
       aspect-ratio: unset;
@@ -182,10 +183,6 @@
       border-bottom-left-radius: 0;
       margin-left: -0.5px;
     }
-    .tier-list-download,
-    .tier-list-upload {
-      margin-left: 0.4em;
-    }
   }
 
   button {
@@ -209,15 +206,6 @@
     }
   }
 
-  .how-to-upload {
-    li > div {
-      display: flex;
-      align-items: center;
-      gap: 0.25em;
-      flex-wrap: wrap;
-    }
-  }
-
   h3 {
     margin-top: 1.5rem;
     margin-bottom: 0.2rem;
@@ -229,17 +217,21 @@
   }
 
   .information {
-    max-width: 550px;
+    max-width: 800px;
     margin: auto;
     margin-top: 3em;
     padding: 0 1rem;
+    > div {
+    }
   }
 
-  .templates {
+  .actions {
     list-style: disclosure-closed;
+
     button {
       font: inherit;
       color: inherit;
+      text-align: left;
 
       margin: 0 -4px;
       padding: 0 4px;

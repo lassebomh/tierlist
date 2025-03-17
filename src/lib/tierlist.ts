@@ -38,7 +38,7 @@ function empty(): TierList {
       {
         name: "C",
         items: [],
-        color: "#fed966",
+        color: "#edc031",
       },
       {
         name: "D",

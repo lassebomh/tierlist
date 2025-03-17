@@ -18,6 +18,7 @@ export async function request_file_upload(type: string): Promise<File | null> {
 export function request_multi_file_upload(type: string): Promise<File[] | null> {
   const uploadInput = document.createElement("input");
   uploadInput.type = "file";
+  uploadInput.accept = type;
 
   let cleanupFiles: () => void;
 

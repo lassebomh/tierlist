@@ -3,6 +3,10 @@
   import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "../lib/utils";
   import { type Item, type TierList, templates } from "../lib/tierlist";
   import { blob_to_dataurl, blob_to_text, extract_image_segments } from "../lib/blob";
+  import { fly, draw, fade, slide } from "svelte/transition";
+  import { flip } from "svelte/animate";
+  import { onDestroy } from "svelte";
+  import { on } from "svelte/events";
 
   async function onDrop(e: DragEvent) {
     e.preventDefault();
@@ -49,6 +53,19 @@
   let target = $state<DragTarget | undefined>();
 
   let { tierlist = $bindable(), mode }: { tierlist: TierList; mode: "mode-delete" | "mode-move" } = $props();
+
+  let scroll_position = $state(0);
+
+  onDestroy(
+    on(
+      window,
+      "scroll",
+      () => {
+        scroll_position = window.scrollY;
+      },
+      { passive: true }
+    )
+  );
 </script>
 
 <svelte:document
@@ -71,13 +88,39 @@
     }
   }}
 />
+{#if scroll_position > 180}
+  <button
+    in:fade={{ duration: 100 }}
+    out:fade={{ duration: 100 }}
+    class="scroll-to-top"
+    class:highlight={from !== undefined}
+    onclick={() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }}
+    ondragover={() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }}
+  >
+    <div>Return</div>
+    <div style="font-size: 0.6em; position: absolute; bottom: 4px;" style:opacity={from !== undefined ? "1" : "0"}>
+      (hover)
+    </div>
+  </button>
+{/if}
 <div class="tier-list {mode}" class:dragging={from !== undefined}>
   {#each tierlist.tiers as tier, tier_index}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="tier"
-      style:color={tier.color}
+      style:background-color={tier.color}
       style:outline-color={tier.color}
+      style:user-select={from !== undefined ? "none" : undefined}
       ondragover={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -88,10 +131,11 @@
       <div
         class="tier-name-edit"
         spellcheck="false"
+        style:user-select={from !== undefined ? "none" : undefined}
         contenteditable="true"
-        style:font-size={tier.name.length > 1 ? "1.25rem" : "3rem"}
+        style:font-size={tier.name.trim().length <= 1 ? "3rem" : "1.5rem"}
         style:outline-color={tier.color}
-        bind:textContent={tier.name}
+        bind:innerText={tier.name}
       ></div>
       {@render DeleteOverlay(() => {
         tierlist.uncategorized.push(...tier.items);
@@ -99,10 +143,12 @@
       })}
     </div>
 
-    <div class="tier-items" style:background-color={tier.color}>
+    <div class="tier-items">
+      <div class="tier-items-backdrop" style:background-color={tier.color}></div>
       {#each tier.items as item, item_index (item.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
+          animate:flip={{ duration: 150 }}
           class="tier-item"
           draggable="true"
           ondragstart={(e) => {
@@ -166,12 +212,13 @@
       </button>
     </div>
   {/each}
-  <div class="uncategorized">
+  <div class="uncategorized" style:outline={tierlist.uncategorized.length === 0 ? "2px #fff3 dashed" : undefined}>
     <div class="tier-items">
       {#each tierlist.uncategorized as item, item_index (item.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tier-item"
+          animate:flip={{ duration: 150 }}
           draggable="true"
           ondragstart={(e) => {
             if (e.dataTransfer !== null) {
@@ -227,35 +274,13 @@
 {/snippet}
 
 <style>
-  .delete-overlay {
-    inset: 0;
-    background-color: #0006;
-    position: absolute;
-    justify-content: start;
-    padding: 8px;
-    color: #ddd;
-    align-items: start;
-    display: none;
-    aspect-ratio: unset;
-    opacity: 1;
-
-    &:hover {
-      outline: 2px solid cornflowerblue;
-      opacity: 1;
-      z-index: 1;
-    }
-
-    .mode-delete & {
-      display: flex;
-    }
-  }
-
   .tier-list {
     margin-top: 2rem;
     display: grid;
-    row-gap: 1rem;
     grid-template-columns: max-content 1fr auto;
     grid-template-rows: auto;
+
+    --item-size: 110px;
   }
 
   button,
@@ -289,14 +314,15 @@
     gap: 0em;
     font-size: 1em;
     height: 100%;
-    width: 90px;
+    width: 2em;
     aspect-ratio: 1;
   }
 
   .tier {
     position: relative;
-    min-width: 90px;
-    padding: 0 12px;
+    min-width: var(--item-size);
+    padding: 12px;
+    box-shadow: inset 0 0 2px #0004;
   }
 
   .tier-name-edit {
@@ -307,9 +333,12 @@
     justify-content: center;
     align-items: center;
     font-weight: 400;
-    line-height: 1.4rem;
+    line-height: 1em;
+    color: white;
+    white-space: pre-line;
 
     outline: none !important;
+    text-shadow: #0005 0 0 8px;
 
     .dragging & {
       pointer-events: none;
@@ -317,21 +346,30 @@
   }
 
   .tier-items {
+    position: relative;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    min-height: 90px;
+    min-height: var(--item-size);
+    padding-left: 3px;
+
+    .tier-items-backdrop {
+      inset: 0;
+      position: absolute;
+      background-color: #222 !important;
+      top: 1px;
+      bottom: 1px;
+    }
   }
 
   .tier-item {
-    display: content;
     cursor: pointer;
     position: relative;
+    touch-action: pan-y;
     line-height: 0;
     > img {
-      height: 86px;
+      height: var(--item-size);
       image-rendering: pixelated;
-      margin: 2px;
     }
   }
 
@@ -374,24 +412,62 @@
 
   .uncategorized {
     border-radius: 6px;
-    outline: 2px #fff3 dashed;
+
     outline-offset: -2px;
     background: transparent;
     grid-column: 2 / 3;
     display: flex;
     flex-direction: column;
     position: relative;
+    margin-top: 1em;
 
     .tier-items {
       background-color: transparent;
     }
   }
+  .delete-overlay {
+    inset: 0;
+    background-color: #0006;
+    position: absolute;
+    justify-content: start;
+    padding: 8px;
+    color: #ddd;
+    align-items: start;
+    display: none;
+    aspect-ratio: unset;
+    opacity: 1;
 
-  .information {
-    max-width: 550px;
-    margin: auto;
-    margin-top: 3em;
-    padding: 0 1rem;
+    &:hover {
+      outline: 2px solid cornflowerblue;
+      opacity: 1;
+      z-index: 1;
+    }
+
+    .mode-delete & {
+      display: flex;
+    }
+  }
+
+  .scroll-to-top {
+    position: fixed;
+    top: 50%;
+    font-family: inherit;
+    font-size: inherit;
+    flex-direction: column;
+    left: 1px;
+    color: #fff5;
+    border: 2px solid #fff2;
+    white-space: nowrap;
+    padding: 1.5rem 1.5rem;
+
+    &:hover {
+      border: 2px solid #ffff;
+    }
+
+    &.highlight {
+      color: #fff8;
+      border-color: #fff5;
+    }
   }
 
   .templates {

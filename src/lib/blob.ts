@@ -1,4 +1,4 @@
-import { hsv_to_rgb, int_to_rgba, rgba_to_int } from "./color";
+import { distance, hsv_to_rgb, int_to_rgba, rgba_to_int } from "./color";
 
 export function blob_to_text(file: Blob): Promise<string> {
   return new Promise<string>((res) => {
@@ -107,13 +107,6 @@ export async function extract_image_segments(blob: Blob): Promise<Blob[]> {
     }
   }
 
-  for (const [color, count] of counter) {
-    if (dominantColorCount < count) {
-      dominantColor = color;
-      dominantColorCount = count;
-    }
-  }
-
   const bgPoints = new Array<boolean>(mat.length).fill(false);
 
   const queue = Array.from(borderPoints);
@@ -124,6 +117,7 @@ export async function extract_image_segments(blob: Blob): Promise<Blob[]> {
     ignore.add(pnt);
 
     if (mat[pnt] === dominantColor) {
+      // distance(mat[pnt], dominantColor) < 30) {
       // paint(pnt, rgba_to_int(255, 0, 0, 100));
       // await tick();
       bgPoints[pnt] = true;
@@ -131,7 +125,6 @@ export async function extract_image_segments(blob: Blob): Promise<Blob[]> {
       // paint(pnt, rgba_to_int(100, 0, 0, 255));
       continue;
     }
-
     const right = pnt + 1;
     if (!ignore.has(right) && (right + 1) % width !== 0) {
       queue.push(right);

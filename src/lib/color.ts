@@ -47,3 +47,12 @@ export function int_to_rgba(dec: number) {
   const a = (dec >> 24) & 255;
   return { r, g, b, a };
 }
+
+export function distance(a: number, b: number) {
+  return (
+    Math.abs((a & 255) - (b & 255)) +
+    Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)) +
+    Math.abs(((a >> 16) & 255) - ((b >> 16) & 255)) +
+    Math.abs(((a >> 24) & 255) - ((b >> 24) & 255))
+  );
+}
