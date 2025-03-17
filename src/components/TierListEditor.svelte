@@ -56,6 +56,8 @@
 
   let scroll_position = $state(0);
 
+  let scrolling_to_top = false;
+
   onDestroy(
     on(
       window,
@@ -88,7 +90,7 @@
     }
   }}
 />
-{#if scroll_position > 180}
+{#if scroll_position > 180 && !scrolling_to_top}
   <button
     in:fade={{ duration: 100 }}
     out:fade={{ duration: 100 }}
@@ -101,10 +103,15 @@
       });
     }}
     ondragover={() => {
+      if (scrolling_to_top) return;
+      scrolling_to_top = true;
       window.scrollTo({
         top: 0,
         behavior: "smooth",
       });
+      setTimeout(() => {
+        scrolling_to_top = false;
+      }, 1000);
     }}
   >
     <div>Return</div>

@@ -221,8 +221,6 @@
     margin: auto;
     margin-top: 3em;
     padding: 0 1rem;
-    > div {
-    }
   }
 
   .actions {
