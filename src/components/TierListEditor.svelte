@@ -276,9 +276,11 @@
 {/snippet}
 
 {#snippet DeleteOverlay(onclick: () => void)}
-  <button class="delete-overlay" {onclick}>
-    <Icon icon={"trash"} />
-  </button>
+  {#if mode === "mode-delete"}
+    <button class="delete-overlay" {onclick}>
+      <Icon icon={"trash"} />
+    </button>
+  {/if}
 {/snippet}
 
 <style>
@@ -441,7 +443,7 @@
     padding: 8px;
     color: #ddd;
     align-items: start;
-    display: none;
+    display: flex;
     aspect-ratio: unset;
     opacity: 1;
 
@@ -449,10 +451,6 @@
       outline: 2px solid cornflowerblue;
       opacity: 1;
       z-index: 1;
-    }
-
-    .mode-delete & {
-      display: flex;
     }
   }
 
@@ -467,13 +465,16 @@
     border: 2px solid #fff2;
     white-space: nowrap;
     padding: 1.5rem 1.5rem;
+    background-color: #0007;
 
     &:hover {
+      background-color: #000a;
       border: 2px solid #ffff;
     }
 
     &.highlight {
       color: #fff8;
+      background-color: #000c;
       border-color: #fff5;
     }
   }

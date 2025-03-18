@@ -90,7 +90,7 @@ async function tabg_blessings() {
 }
 
 async function melee() {
-  const res = await fetch("tierlists/melee.png");
+  const res = await fetch("./tierlists/melee.png");
   const blob = await res.blob();
   const segments = await extract_image_segments(blob);
   const dataurls = await Promise.all(segments.map(blob_to_dataurl));
@@ -124,8 +124,8 @@ async function tabg_grenades() {
 }
 
 export const templates = {
-  tabg_blessings,
-  tabg_grenades,
+  "tabg-blessings": tabg_blessings,
+  "tabg-grenades": tabg_grenades,
   melee,
   balatro,
   empty,

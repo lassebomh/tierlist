@@ -1,19 +1,20 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
   import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "./lib/utils";
-  import { type TierList, templates } from "./lib/tierlist";
+  import { templates, type TierList } from "./lib/tierlist";
   import { blob_to_dataurl, blob_to_text, extract_image_segments } from "./lib/blob";
   import TierListEditor from "./components/TierListEditor.svelte";
+  import Service from "../service?worker";
+  import { onDestroy } from "svelte";
+  import { on } from "svelte/events";
 
   let tierlist = $state<TierList>(templates.empty());
 
-  async function ask_load_template<T extends keyof typeof templates>(key: T) {
-    const hasItems = tierlist.uncategorized.length > 0 || tierlist.tiers.map((x) => x.items.length).some((x) => x > 0);
+  const service = new Service();
 
-    if (hasItems && !confirm("Loading this template will delete your current tier list. Are you sure?")) return;
+  service.postMessage(window.location.search.substring(2));
 
-    tierlist = await templates[key]();
-  }
+  onDestroy(on(service, "message", (e) => (tierlist = (e as any).data)));
 
   let mode = $state<"mode-delete" | "mode-move">("mode-move");
 </script>
@@ -112,17 +113,16 @@
     <div>
       <h3>Templates</h3>
       <ul class="actions">
-        <li><button onclick={() => ask_load_template("empty")}>Empty</button></li>
-        <li><button onclick={() => ask_load_template("melee")}>Super Smash Bros. Melee</button></li>
+        <li><a href="./">Empty</a></li>
+        <li><a href="./?/melee">Super Smash Bros. Melee</a></li>
         <li>
-          <button onclick={() => ask_load_template("tabg_blessings")}>Totally Accurate Battlegrounds (Blessings)</button
-          >
+          <a href="./?/tabg-blessings">Totally Accurate Battlegrounds (Blessings)</a>
         </li>
         <li>
-          <button onclick={() => ask_load_template("tabg_grenades")}>Totally Accurate Battlegrounds (Grenades)</button>
+          <a href="./?/tabg-grenades">Totally Accurate Battlegrounds (Grenades)</a>
         </li>
         <li>
-          <button onclick={() => ask_load_template("balatro")}>Balatro</button>
+          <a href="./?/balatro">Balatro</a>
         </li>
       </ul>
     </div>

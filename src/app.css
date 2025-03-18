@@ -24,3 +24,10 @@ body {
   src: url(/fonts/runescape_bold.ttf);
   font-display: block;
 }
+
+a {
+  color: cornflowerblue;
+}
+a:visited {
+  color: rgb(106, 67, 248);
+}
