@@ -55,8 +55,9 @@
   let { tierlist = $bindable(), mode }: { tierlist: TierList; mode: "mode-delete" | "mode-move" } = $props();
 
   let scroll_position = $state(0);
+  let scrolling_to_top = $state(false);
 
-  let scrolling_to_top = false;
+  const show_scroll_to_top = $derived(scroll_position > 180 && !scrolling_to_top);
 
   onDestroy(
     on(
@@ -90,7 +91,7 @@
     }
   }}
 />
-{#if scroll_position > 180 && !scrolling_to_top}
+{#if show_scroll_to_top}
   <button
     in:fade={{ duration: 100 }}
     out:fade={{ duration: 100 }}
