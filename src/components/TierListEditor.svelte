@@ -172,7 +172,7 @@
             target = undefined;
           }}
         >
-          <img src={item.src} alt={item.name ?? ""} title={item.name} />
+          <img src={item.src} alt={item.name ?? ""} height="110" title={item.name} />
           {@render DropHandle(tier_index, item_index, true)}
           {@render DropHandle(tier_index, item_index, false)}
           {@render DeleteOverlay(() => {
@@ -241,7 +241,7 @@
             target = undefined;
           }}
         >
-          <img src={item.src} alt={item.name ?? ""} title={item.name} />
+          <img src={item.src} alt={item.name ?? ""} height="110" title={item.name} />
           {@render DropHandle(null, item_index, true)}
           {@render DropHandle(null, item_index, false)}
           {@render DeleteOverlay(() => {
