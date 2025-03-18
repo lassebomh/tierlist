@@ -61,7 +61,7 @@ function balatro() {
 
   for (const path of urls) {
     const url = path.replace("../../public/", "");
-    const name = url.split(".")[0].split("/").at(-1)?.replace("_", " ");
+    const name = url.split(".")[0].split("/").at(-1)?.replaceAll("_", " ");
     tierlist.uncategorized.push({
       id: random_id(),
       src: url,
