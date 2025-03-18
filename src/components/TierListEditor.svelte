@@ -373,7 +373,7 @@
   .tier-item {
     cursor: pointer;
     position: relative;
-    touch-action: pan-y;
+    touch-action: pan-y pan-x;
     line-height: 0;
     > img {
       height: var(--item-size);
