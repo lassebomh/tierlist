@@ -1,115 +1,125 @@
 <script lang="ts">
   import Icon from "./components/Icon.svelte";
-  import { download_file, slugify, request_multi_file_upload, request_file_upload, random_id } from "./lib/utils";
+  import { download_file, slugify, random_id } from "./lib/utils";
   import { templates, type TierList } from "./lib/tierlist";
   import { blob_to_dataurl, blob_to_text, extract_image_segments } from "./lib/blob";
   import TierListEditor from "./components/TierListEditor.svelte";
-  import Service from "../service?worker";
-  import { onDestroy } from "svelte";
-  import { on } from "svelte/events";
 
   let tierlist = $state<TierList>(templates.empty());
 
-  const service = new Service();
+  {
+    const template_key = window.location.search.substring(2) as keyof typeof templates;
+    const template_func = templates[template_key];
+    if (template_func !== undefined) {
+      const maybePromise = template_func();
+      if (maybePromise instanceof Promise) {
+        maybePromise.then((value) => {
+          tierlist = value;
+        });
+      } else {
+        tierlist = maybePromise;
+      }
+    }
+  }
 
-  service.postMessage(window.location.search.substring(2));
-
-  onDestroy(on(service, "message", (e) => (tierlist = (e as any).data)));
+  $inspect(tierlist.tiers[0].name);
 
   let mode = $state<"mode-delete" | "mode-move">("mode-move");
 </script>
 
 <main class={mode}>
-  <div class="tier-list-mode-buttons">
+  <div class="tier-actions">
+    <div class="btn-group">
+      <button class="btn" title="Move mode" class:active={mode === "mode-move"} onclick={() => (mode = "mode-move")}>
+        <Icon icon={"move"} />
+      </button>
+      <button
+        class="btn"
+        title="Delete mode"
+        class:active={mode === "mode-delete"}
+        onclick={() => (mode = "mode-delete")}
+      >
+        <Icon icon={"trash"} />
+      </button>
+    </div>
+
+    <div class="btn-group">
+      <button
+        class="btn"
+        title="Save"
+        onclick={() => download_file(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2))}
+      >
+        Save
+      </button>
+      <label class="btn">
+        Load
+        <input
+          type="file"
+          accept="application/json"
+          onchange={async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files?.length !== 1) return;
+            tierlist = JSON.parse(await blob_to_text(files[0]));
+          }}
+        />
+      </label>
+    </div>
     <button
-      title="Move mode"
-      class="tier-list-mode-move"
-      class:active={mode === "mode-move"}
-      onclick={() => (mode = "mode-move")}
+      class="btn"
+      onclick={() =>
+        tierlist.tiers.push({
+          color: "#666666",
+          name: "X",
+          items: [],
+        })}>New tier</button
     >
-      <Icon icon={"move"} />
-    </button>
-    <button
-      title="Delete mode"
-      class="tier-list-mode-delete"
-      class:active={mode === "mode-delete"}
-      onclick={() => (mode = "mode-delete")}
-    >
-      <Icon icon={"trash"} />
-    </button>
+
+    <div class="btn-group">
+      <label class="btn">
+        Upload image
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onchange={async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (!files?.length) return;
+            for (const file of files) {
+              tierlist.uncategorized.unshift({
+                id: random_id(),
+                src: await blob_to_dataurl(file),
+              });
+            }
+          }}
+        />
+      </label>
+      <label class="btn">
+        spritesheet
+        <input
+          type="file"
+          accept="image/*"
+          onchange={async (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files?.length !== 1) return;
+
+            const blobs = await extract_image_segments(files[0]);
+            const dataUrls = await Promise.all(blobs.map(blob_to_dataurl));
+
+            tierlist.uncategorized.push(
+              ...dataUrls.map((url) => ({
+                id: random_id(),
+                src: url,
+              }))
+            );
+          }}
+        />
+      </label>
+    </div>
   </div>
 
   <TierListEditor bind:tierlist {mode} />
 
   <div class="information">
-    <div>
-      <h3>Actions</h3>
-      <ul class="actions">
-        <li>
-          <button
-            onclick={async () => {
-              let files = await request_multi_file_upload("image/*");
-              if (files === null) return;
-              for (const file of files) {
-                tierlist.uncategorized.push({
-                  id: random_id(),
-                  src: await blob_to_dataurl(file),
-                });
-              }
-            }}>Upload images</button
-          >
-        </li>
-        <li>
-          <button
-            onclick={async () => {
-              let file = await request_file_upload("image/*");
-              if (file === null) return;
-
-              const blobs = await extract_image_segments(file);
-              const dataUrls = await Promise.all(blobs.map(blob_to_dataurl));
-
-              tierlist.uncategorized.push(
-                ...dataUrls.map((url) => ({
-                  id: random_id(),
-                  src: url,
-                }))
-              );
-            }}>Upload a spritesheet</button
-          >
-        </li>
-      </ul>
-      <ul class="actions">
-        <li>
-          <button
-            onclick={() =>
-              tierlist.tiers.push({
-                color: "#666666",
-                name: "X",
-                items: [],
-              })}>Create a new tier</button
-          >
-        </li>
-      </ul>
-
-      <ul class="actions">
-        <li>
-          <button
-            onclick={() => {
-              download_file(slugify(tierlist.name) + ".json", JSON.stringify(tierlist, undefined, 2));
-            }}>Save</button
-          >
-        </li>
-        <li>
-          <button
-            onclick={async () => {
-              const file = await request_file_upload("application/json");
-              if (file === null) return;
-              tierlist = JSON.parse(await blob_to_text(file));
-            }}>Load</button
-          >
-        </li>
-      </ul>
-    </div>
     <div>
       <h3>Templates</h3>
       <ul class="actions">
@@ -119,10 +129,10 @@
           <a href="./?/tabg-blessings">Totally Accurate Battlegrounds (Blessings)</a>
         </li>
         <li>
-          <a href="./?/tabg-grenades">Totally Accurate Battlegrounds (Grenades)</a>
+          <a href="./?/balatro">Balatro</a>
         </li>
         <li>
-          <a href="./?/balatro">Balatro</a>
+          <a href="./?/flags">Flags</a>
         </li>
       </ul>
     </div>
@@ -136,74 +146,14 @@
     width: 80vw;
     max-width: 100vw;
     padding: 0 12px;
-    /* perspective: 8000px; */
     flex-grow: 1;
     margin-bottom: 100vh;
   }
 
-  .tier-list-meta-buttons {
-    display: flex;
-    margin-bottom: 8px;
-  }
-
-  .tier-list-mode-buttons {
+  .tier-actions {
     display: flex;
     padding: 0;
-
-    .tier-list-mode-move,
-    .tier-list-mode-delete {
-      border: 1px solid #666;
-      color: #bbb;
-      aspect-ratio: unset;
-      border-radius: 4px;
-      opacity: 0.5;
-      height: 35px;
-      aspect-ratio: 1;
-
-      &.active {
-        opacity: 0.75;
-        color: #fff;
-        background-color: #fff1;
-        border-color: #888;
-        z-index: 1;
-      }
-
-      &:hover {
-        opacity: 1;
-      }
-    }
-
-    .tier-list-mode-move {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-      margin-right: -0.5px;
-    }
-    .tier-list-mode-delete {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      margin-left: -0.5px;
-    }
-  }
-
-  button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.1em;
-    font-size: 1.3em;
-    line-height: 1;
-    color: #fff3;
-
-    &:hover {
-      color: white;
-    }
-
-    &:disabled {
-      pointer-events: none;
-    }
+    gap: 6px;
   }
 
   h3 {
@@ -239,7 +189,7 @@
       }
     }
   }
-
+  /* 
   @media (700px >= width) {
     main {
       padding: 0;
@@ -251,5 +201,5 @@
       justify-content: center;
       margin-bottom: 0;
     }
-  }
+  } */
 </style>

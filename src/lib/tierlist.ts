@@ -89,34 +89,36 @@ async function tabg_blessings() {
   return tierlist;
 }
 
-async function melee() {
-  const res = await fetch("./tierlists/melee.png");
-  const blob = await res.blob();
-  const segments = await extract_image_segments(blob);
-  const dataurls = await Promise.all(segments.map(blob_to_dataurl));
+async function flags() {
   const tierlist = empty();
 
-  for (const dataurl of dataurls) {
+  const urls = Object.keys(import.meta.glob("../../public/tierlists/flags/*", { query: "url", import: "default" }));
+
+  for (const path of urls) {
+    const url = path.replace("../../public/", "");
+    const name = url.split(".")[0].split("/").at(-1)?.replaceAll("_", " ");
     tierlist.uncategorized.push({
       id: random_id(),
-      src: dataurl,
+      src: url,
+      name: name,
     });
   }
 
   return tierlist;
 }
 
-async function tabg_grenades() {
-  const res = await fetch("tierlists/tabg_grenades.png");
-  const blob = await res.blob();
-  const segments = await extract_image_segments(blob);
-  const dataurls = await Promise.all(segments.map(blob_to_dataurl));
+async function melee() {
   const tierlist = empty();
 
-  for (const dataurl of dataurls) {
+  const urls = Object.keys(import.meta.glob("../../public/tierlists/melee/*", { query: "url", import: "default" }));
+
+  for (const path of urls) {
+    const url = path.replace("../../public/", "");
+    const name = url.split(".")[0].split("/").at(-1)?.replaceAll("_", " ");
     tierlist.uncategorized.push({
       id: random_id(),
-      src: dataurl,
+      src: url,
+      name: name,
     });
   }
 
@@ -125,8 +127,8 @@ async function tabg_grenades() {
 
 export const templates = {
   "tabg-blessings": tabg_blessings,
-  "tabg-grenades": tabg_grenades,
   melee,
   balatro,
   empty,
+  flags,
 };
