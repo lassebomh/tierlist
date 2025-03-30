@@ -54,10 +54,11 @@
   const tier_elements = $state<HTMLElement[]>([]);
   let tier_uncategorized_element = $state<HTMLElement>()!;
 
-  let scrolling_to_tier = $state<number | null | undefined>();
+  let scrolling_to_tier: number | null | undefined;
   let scrolling_reset_timeout: ReturnType<typeof setTimeout>;
 
-  function scroll_tier_into_view(tier_index: number | null) {
+  function scroll_tier_into_view(e: Event, tier_index: number | null) {
+    e.preventDefault();
     if (scrolling_to_tier === tier_index) return;
     const element = tier_index === null ? tier_uncategorized_element : tier_elements[tier_index];
     element.scrollIntoView({
@@ -97,8 +98,8 @@
   <div class="tier-jump-buttons">
     {#each tierlist.tiers as tier, tier_index}
       <button
-        onclick={() => scroll_tier_into_view(tier_index)}
-        ondragover={() => scroll_tier_into_view(tier_index)}
+        onclick={(e) => scroll_tier_into_view(e, tier_index)}
+        ondragover={(e) => scroll_tier_into_view(e, tier_index)}
         class="tier-jump-button"
         style:color={tier.color}
       >
@@ -106,8 +107,8 @@
       </button>
     {/each}
     <button
-      onclick={() => () => scroll_tier_into_view(null)}
-      ondragover={() => () => scroll_tier_into_view(null)}
+      onclick={(e) => scroll_tier_into_view(e, null)}
+      ondragover={(e) => scroll_tier_into_view(e, null)}
       class="tier-jump-button"
       style:color="#fff6"
       style:margin-top="12px"
