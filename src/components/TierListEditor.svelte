@@ -57,14 +57,19 @@
   let scrolling_to_tier = $state<number | null | undefined>();
   let scrolling_reset_timeout: ReturnType<typeof setTimeout>;
 
-  $effect(() => {
-    if (scrolling_to_tier !== undefined) {
-      if (scrolling_reset_timeout) clearTimeout(scrolling_reset_timeout);
-      scrolling_reset_timeout = setTimeout(() => {
-        scrolling_to_tier = undefined;
-      }, 600);
-    }
-  });
+  function scroll_tier_into_view(tier_index: number | null) {
+    if (scrolling_to_tier === tier_index) return;
+    const element = tier_index === null ? tier_uncategorized_element : tier_elements[tier_index];
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    scrolling_to_tier = tier_index;
+    if (scrolling_reset_timeout) clearTimeout(scrolling_reset_timeout);
+    scrolling_reset_timeout = setTimeout(() => {
+      scrolling_to_tier = undefined;
+    }, 600);
+  }
 </script>
 
 <svelte:document
@@ -91,36 +96,18 @@
 <div class="tier-jump-buttons-container">
   <div class="tier-jump-buttons">
     {#each tierlist.tiers as tier, tier_index}
-      {@const onclick = () => {
-        if (scrolling_to_tier === tier_index) return;
-        tier_elements[tier_index].scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        scrolling_to_tier = tier_index;
-      }}
-      <button {onclick} ondragover={onclick} class="tier-jump-button" style:color={tier.color}>
+      <button
+        onclick={() => scroll_tier_into_view(tier_index)}
+        ondragover={() => scroll_tier_into_view(tier_index)}
+        class="tier-jump-button"
+        style:color={tier.color}
+      >
         <pre>{tier.name}</pre>
-        <!-- <div style="position: absolute; inset: 0; opacity: 0.3;" style:background-color={tier.color}></div> -->
       </button>
     {/each}
     <button
-      onclick={() => {
-        if (scrolling_to_tier === null) return;
-        tier_uncategorized_element.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        scrolling_to_tier = null;
-      }}
-      ondragover={() => {
-        if (scrolling_to_tier === null) return;
-        tier_uncategorized_element.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        scrolling_to_tier = null;
-      }}
+      onclick={() => () => scroll_tier_into_view(null)}
+      ondragover={() => () => scroll_tier_into_view(null)}
       class="tier-jump-button"
       style:color="#fff6"
       style:margin-top="12px"
